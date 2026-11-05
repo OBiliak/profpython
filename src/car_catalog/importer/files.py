@@ -68,12 +68,20 @@ class AtomicWriter:
         if self.file is not None:
             self.file.close()
         if exc_type is not None:
-            self.temporary.unlink(missing_ok=True)
-            logger.warning("Запис %s скасовано, тимчасовий файл видалено", self.path)
+            self.rollback()
             return
-        if self.backup and self.path.exists():
-            shutil.copy2(self.path, backup_path(self.path))
-        self.temporary.replace(self.path)
+        try:
+            if self.backup and self.path.exists():
+                shutil.copy2(self.path, backup_path(self.path))
+            self.temporary.replace(self.path)
+        except OSError:
+            self.rollback()
+            raise
+
+    def rollback(self) -> None:
+        """Delete the temporary file; the previous output stays unchanged."""
+        self.temporary.unlink(missing_ok=True)
+        logger.warning("Запис %s скасовано, тимчасовий файл видалено", self.path)
 
 
 @contextmanager

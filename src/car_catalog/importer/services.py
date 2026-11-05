@@ -89,9 +89,12 @@ def build_summary(
     }
 
 
-def run_import(config: AppConfig) -> ImportStatistics:
+def run_import(
+    config: AppConfig, statistics: ImportStatistics | None = None
+) -> ImportStatistics:
     """Import, validate, filter and export vehicles according to the configuration."""
-    statistics = ImportStatistics()
+    if statistics is None:
+        statistics = ImportStatistics()
     errors: list[InvalidRecord] = []
     policy = ValidationPolicy.from_config(config.validation)
     importer = select_importer(config.input.path)
