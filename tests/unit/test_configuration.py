@@ -89,3 +89,28 @@ def test_broken_yaml(tmp_path: Path) -> None:
 
     with pytest.raises(ConfigurationError, match="Некоректний YAML"):
         load_config(path, environ={})
+
+
+@pytest.mark.parametrize(
+    ("old", "new", "message"),
+    [
+        ("schema_version: 1", "schema_version: 2", "Непідтримувана версія схеми 2"),
+        ("level: INFO", "level: LOUD", "Невідомий рівень logging: LOUD"),
+        ("progress_every: 100", "progress_every: 0", "progress_every має бути більшим за 0"),
+        ("path: input.csv", "path: absent.csv", "Вхідний файл не знайдено"),
+    ],
+    ids=["schema-version", "log-level", "progress-step", "missing-input"],
+)
+def test_rejects_invalid_values(config_file: Path, old: str, new: str, message: str) -> None:
+    replace_in_file(config_file, old, new)
+
+    with pytest.raises(ConfigurationError, match=message):
+        load_config(config_file, environ={})
+
+
+def test_rejects_yaml_that_is_not_dictionary(tmp_path: Path) -> None:
+    path = tmp_path / "list.yaml"
+    path.write_text("- 1\n- 2\n", encoding="utf-8")
+
+    with pytest.raises(ConfigurationError, match="має бути словником"):
+        load_config(path, environ={})

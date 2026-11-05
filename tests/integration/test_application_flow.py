@@ -54,3 +54,7 @@ def test_strict_mode_from_environment_keeps_output_unchanged(
 
     assert app.main([str(config_file)]) == 1
     assert not (config_file.parent / "output" / "vehicles.json").exists()
+
+
+def test_import_application_returns_2_for_invalid_configuration(tmp_path: Path) -> None:
+    assert app.main([str(tmp_path / "absent.yaml")]) == 2
