@@ -6,7 +6,32 @@
 - Лабораторна робота №1 «Організація професійного Python-проєкту та Git» — консольний застосунок (console.py).
 - Лабораторна робота №2 «Структури даних та функціональна декомпозиція» — аналіз каталогу автомобілів (analysis.py).
 - Лабораторна робота №3 «Ітератори, генератори та потокова обробка даних» — потоковий конвеєр (підпакет stream/).
-- Лабораторна робота №4 «Професійне ООП та система типів Python» — ООП-модель каталогу (main.py, підпакет domain/).
+- Лабораторна робота №4 «Професійне ООП та система типів Python» — ООП-модель каталогу (підпакет domain/).
+- Лабораторна робота №5 «Обробка помилок, файли та серіалізація» — надійний імпорт/експорт (main.py, підпакет importer/).
+
+## Можливості (лабораторна робота №5)
+- поля варіанта: vehicle_id, brand, model, year, price, mileage; перевірка positive ID, brand/model,
+  допустимого year (діапазон з config.yaml), price >= 0, mileage >= 0;
+- streaming CSV import (csv.DictReader), JSON export, фільтр за діапазоном цін з config.yaml;
+- ієрархія винятків ApplicationError → ConfigurationError, DataError → DataImportError,
+  RecordValidationError, DataExportError; exception chaining (`raise ... from error`);
+- strict mode (`skip_invalid: false`) і tolerant mode (`skip_invalid: true`), статистика valid/invalid/filtered/exported;
+- logging у консоль і файл logs/application.log з ротацією (RotatingFileHandler);
+- atomic export через тимчасовий файл і `replace()`, власні context managers AtomicWriter і logged_operation;
+- підвищена складність (усі 20 пунктів п. 84): єдиний interface Importer для CSV, JSON Lines, JSON і YAML;
+  Exporter Protocol; вибір формату за розширенням; окремий error CSV; configurable logging; log rotation;
+  nested configuration; environment-variable override; atomic export; backup (.bak); streaming JSON Lines;
+  progress statistics; transaction-like context manager; validation policy object; retry; schema version;
+  export summary report; gzip; custom JSON encoder;
+- експерименти: strict vs tolerant, streaming vs eager (peak memory), exception chaining, atomic output,
+  помилки конфігурації.
+
+### Змінні середовища (override config.yaml)
+| Змінна | Ключ YAML |
+|---|---|
+| CAR_IMPORT_INPUT | input.path |
+| CAR_IMPORT_SKIP_INVALID | processing.skip_invalid |
+| CAR_IMPORT_LOG_LEVEL | logging.level |
 
 ## Можливості (лабораторна робота №4)
 - domain entities: Vehicle (ABC) → Car → ElectricCar, колекція VehicleCatalog (composition, `__len__`,
@@ -43,7 +68,7 @@
 - benchmark пошуку list vs dict і перевірки наявності list vs set на 1 000 / 10 000 / 100 000 записів.
 
 ## Вимоги
-Python 3.11+ (стандартна бібліотека); для розробки — mypy (`pip install -e ".[dev]"`)
+Python 3.11+, PyYAML (встановлюється з пакетом); для розробки — mypy і types-PyYAML (`pip install -e ".[dev]"`)
 
 ## Встановлення
 ```bash
@@ -54,8 +79,12 @@ python -m pip install -e ".[dev]"
 
 ## Запуск
 ```bash
-python -m car_catalog.main                     # ООП-модель каталогу (ЛР4)
+python -m car_catalog.main                     # імпорт/експорт за config.yaml (ЛР5), з кореня проєкту
 car-catalog                                    # те саме, console script
+python -m car_catalog.main other.yaml          # інший файл конфігурації
+CAR_IMPORT_SKIP_INVALID=false python -m car_catalog.main   # strict mode без зміни YAML
+python -m car_catalog.importer.experiments     # експерименти ЛР5 (~10 с)
+python -m car_catalog.domain.demo              # ООП-модель каталогу (ЛР4)
 python -m car_catalog.domain.experiments       # DI vs без DI, inheritance vs composition (ЛР4)
 python -m car_catalog.stream.demo              # потокова обробка (ЛР3), запускати з кореня проєкту
 python -m car_catalog.stream.experiment        # eager vs lazy, early termination (ЛР3, ~1 хв)
@@ -89,11 +118,17 @@ src/car_catalog/analytics.py   статистика, сортування, *args
 src/car_catalog/decorators.py  measure_time, log_operation, історія в deque (ЛР2)
 src/car_catalog/analysis.py    аналіз каталогу (ЛР2)
 src/car_catalog/benchmark.py   benchmark пошуку (ЛР2)
-src/car_catalog/main.py        точка входу: демонстрація ООП-моделі (ЛР4)
+src/car_catalog/main.py        точка входу: імпорт/експорт каталогу (ЛР5)
 src/car_catalog/stream/        readers, parsers, models, filters, transformations, batches,
                                analytics, iterators, generate, pipeline, experiment, demo (ЛР3)
 src/car_catalog/domain/        models, value_objects, specifications, protocols, repositories,
-                               statistics, dto, exceptions, services, experiments (ЛР4)
+                               statistics, dto, exceptions, services, experiments, demo (ЛР4)
+src/car_catalog/importer/      exceptions, models, config, logging_config, files, readers,
+                               validators, exporters, services, experiments (ЛР5)
+config.yaml                    конфігурація імпорту (ЛР5)
+data/vehicles.csv              вхідний CSV варіанта 5 з valid і invalid записами (ЛР5)
+data/vehicles_extra.yaml       YAML input (ЛР5)
+output/, logs/                 результати імпорту та log (створюються під час запуску, не комітяться)
 typecheck_demo/errors.py       type-checking experiment (ЛР4)
 check.sh                       CI-like перевірка: mypy + unit tests (ЛР4)
 data/cars.csv, data/cars_extra.csv  демонстраційні CSV (з некоректними рядками)
@@ -101,4 +136,5 @@ tests/test_services.py         unit tests ЛР1
 tests/test_analytics.py        unit tests ЛР2
 tests/test_stream.py           unit tests ЛР3
 tests/test_domain.py           unit tests ЛР4
+tests/test_importer.py         unit tests ЛР5
 ```
