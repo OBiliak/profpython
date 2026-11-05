@@ -73,9 +73,9 @@ def experiment_strict_tolerant() -> None:
         statistics = ImportStatistics()
         try:
             run_import(load_config(config_path, {}), statistics)
-            finish = "успішно, код 0"
+            finish = "успішно"
         except RecordValidationError as error:
-            finish = f"зупинено на рядку {error.line_number}, код 1"
+            finish = f"RecordValidationError, рядок {error.line_number}"
         results[mode] = (statistics, finish, (WORK_DIR / output).exists())
     print(f"{'Параметр':<24} {'Strict':<28} {'Tolerant':<28}")
     rows: list[tuple[str, Callable[[ImportStatistics, str, bool], object]]] = [
