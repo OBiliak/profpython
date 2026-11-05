@@ -137,7 +137,8 @@ class ElectricCar(Car):
 
     def describe(self) -> str:
         """Return the description with battery data."""
-        return f"{super().describe()}, батарея {self.battery_kwh} кВт·год, запас ходу {self.range_km} км"
+        battery = f"батарея {self.battery_kwh} кВт·год, запас ходу {self.range_km} км"
+        return f"{super().describe()}, {battery}"
 
 
 @dataclass
