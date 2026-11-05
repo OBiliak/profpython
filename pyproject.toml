@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "car-catalog"
-version = "0.5.0"
+version = "0.6.0"
 description = "Car catalog laboratory project"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -12,12 +12,42 @@ dependencies = ["pyyaml>=6.0"]
 
 [project.optional-dependencies]
 dev = ["mypy>=1.10", "types-PyYAML>=6.0"]
+test = ["pytest>=8.0", "pytest-cov>=5.0", "pytest-asyncio>=0.23"]
 
 [project.scripts]
 car-catalog = "car_catalog.main:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["-ra", "--strict-markers"]
+markers = [
+    "integration: tests that combine several components (files, services, application flow)",
+]
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.coverage.run]
+branch = true
+source = ["car_catalog"]
+omit = [
+    # scripts that only print demonstrations, menus and experiment results
+    "*/car_catalog/analysis.py",
+    "*/car_catalog/benchmark.py",
+    "*/car_catalog/console.py",
+    "*/car_catalog/data.py",
+    "*/car_catalog/domain/demo.py",
+    "*/car_catalog/domain/experiments.py",
+    "*/car_catalog/importer/experiments.py",
+    "*/car_catalog/stream/demo.py",
+    "*/car_catalog/stream/experiment.py",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+fail_under = 80
 
 [tool.mypy]
 python_version = "3.11"
