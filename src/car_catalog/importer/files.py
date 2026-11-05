@@ -10,6 +10,8 @@ from pathlib import Path
 from types import TracebackType
 from typing import TextIO, TypeVar
 
+from car_catalog.importer.exceptions import ApplicationError
+
 T = TypeVar("T")
 
 logger = logging.getLogger(__name__)
@@ -62,17 +64,16 @@ class AtomicWriter:
         exc_type: type[BaseException] | None,
         exc_value: BaseException | None,
         traceback: TracebackType | None,
-    ) -> bool:
+    ) -> None:
         if self.file is not None:
             self.file.close()
         if exc_type is not None:
             self.temporary.unlink(missing_ok=True)
             logger.warning("Запис %s скасовано, тимчасовий файл видалено", self.path)
-            return False
+            return
         if self.backup and self.path.exists():
             shutil.copy2(self.path, backup_path(self.path))
         self.temporary.replace(self.path)
-        return False
 
 
 @contextmanager
@@ -82,8 +83,11 @@ def logged_operation(operation: str) -> Iterator[None]:
     start = time.perf_counter()
     try:
         yield
+    except ApplicationError as error:
+        logger.error("%s: перервано (%s: %s)", operation, type(error).__name__, error)
+        raise
     except Exception:
-        logger.exception("%s: помилка", operation)
+        logger.exception("%s: неочікувана помилка", operation)
         raise
     else:
         logger.info("%s: завершено за %.6f с", operation, time.perf_counter() - start)
