@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=70"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "car-catalog"
+version = "0.1.0"
+description = "Car catalog laboratory project"
+readme = "README.md"
+requires-python = ">=3.11"
+
+[project.scripts]
+car-catalog = "car_catalog.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
