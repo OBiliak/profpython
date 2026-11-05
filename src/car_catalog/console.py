@@ -181,9 +181,9 @@ def run_menu(cars: list[Car]) -> None:
                 print_car("Найменший пробіг:", find_lowest_mileage_car(cars))
             elif command == "8":
                 brand = input("Марка (Enter — будь-яка): ")
-                min_year = read_optional_int("Рік від (Enter — будь-який): ")
+                from_year = read_optional_int("Рік від (Enter — будь-який): ")
                 max_price = read_optional_float("Ціна до (Enter — без обмеження): ")
-                print_cars(search_cars(cars, brand, min_year, max_price))
+                print_cars(search_cars(cars, brand, from_year, max_price))
             elif command == "9":
                 print_cars(sort_cars_by_price(cars))
             elif command == "0":

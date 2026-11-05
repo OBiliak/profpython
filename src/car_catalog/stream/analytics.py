@@ -13,7 +13,7 @@ def calculate_statistics(cars: Iterable[CarRecord]) -> dict:
     total = 0.0
     most_expensive = None
     lowest_mileage = None
-    brands = Counter()
+    brands: Counter[str] = Counter()
     for car in cars:
         count += 1
         total += car.price

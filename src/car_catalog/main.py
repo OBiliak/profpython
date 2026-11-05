@@ -68,7 +68,7 @@ def show_statistics(title: str, cars: Iterable[CarRecord]) -> None:
 def show_demo_files() -> None:
     """Run the pipeline on two small demo CSV files joined by chain."""
     print("\n--- Демонстраційні файли: data/cars.csv + data/cars_extra.csv ---")
-    stats = Counter()
+    stats: Counter[str] = Counter()
     first_cars = list(islice(build_pipeline(DEMO_FILES, stats), 5))
     print_cars("Перші 5 валідних записів (islice):", first_cars)
 
@@ -104,7 +104,7 @@ def show_large_dataset() -> None:
     first = next(build_pipeline([path], Counter()))
     print(f"Time to first result: {(perf_counter() - start) * 1000:.3f} мс -> {format_car(first)}")
 
-    stats = Counter()
+    stats: Counter[str] = Counter()
     start = perf_counter()
     show_statistics("Статистика за один прохід:", build_pipeline([path], stats))
     print(f"Валідних записів: {stats['valid']}, невалідних: {stats['invalid']}")

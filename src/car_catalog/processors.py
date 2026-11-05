@@ -50,7 +50,7 @@ def group_by_brand(cars: list[dict]) -> dict[str, list[dict]]:
 
 def group_by_brand_and_year(cars: list[dict]) -> dict[str, dict[int, list[str]]]:
     """Return car models grouped by brand and then by year."""
-    result = defaultdict(lambda: defaultdict(list))
+    result: defaultdict[str, defaultdict[int, list[str]]] = defaultdict(lambda: defaultdict(list))
     for car in cars:
         result[car["brand"]][car["year"]].append(car["model"])
     return {brand: dict(years) for brand, years in result.items()}
