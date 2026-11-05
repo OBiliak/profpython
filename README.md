@@ -7,7 +7,23 @@
 - Лабораторна робота №2 «Структури даних та функціональна декомпозиція» — аналіз каталогу автомобілів (analysis.py).
 - Лабораторна робота №3 «Ітератори, генератори та потокова обробка даних» — потоковий конвеєр (підпакет stream/).
 - Лабораторна робота №4 «Професійне ООП та система типів Python» — ООП-модель каталогу (підпакет domain/).
-- Лабораторна робота №5 «Обробка помилок, файли та серіалізація» — надійний імпорт/експорт (main.py, підпакет importer/).
+- Лабораторна робота №5 «Обробка помилок, файли та серіалізація» — надійний імпорт/експорт (підпакет importer/, importer/app.py).
+- Лабораторна робота №6 «Автоматизоване тестування Python-програм» — test suite на pytest (tests/), сценарій каталогу (main.py).
+
+## Можливості (лабораторна робота №6)
+- test suite на pytest: tests/unit (unit tests) і tests/integration (marker `integration`), спільні fixtures у
+  tests/conftest.py (fixture factory `make_car`, fixture із yield, autouse, session scope, fake repository);
+- перевіряється за варіантом 5: створення Car і валідація year/price/mileage (boundary та invalid), пошук за маркою
+  і моделлю, фільтр за роком, найдорожчий автомобіль, середня ціна (`pytest.approx`), мінімальний пробіг, порожній
+  каталог, CSV import, malformed record, JSON export (`tmp_path`), configuration діапазону років/цін і environment
+  variables (`monkeypatch`), repository через Mock і fake, external vehicle info service через Mock
+  (`return_value`, `side_effect`, `assert_called_once_with`, `assert_not_called`, autospec) і AsyncMock,
+  integration flow import → filter → export;
+- production code ЛР6: domain/vehicle_info.py (external vehicle info service, sync і async), catalog_flow.py
+  (імпорт у domain-каталог, фільтр, export); дефекти, знайдені тестами, виправлено (див. git log);
+- coverage з branch coverage, поріг `fail_under = 80` у pyproject.toml, HTML-звіт htmlcov/;
+- експерименти (папка experiments/, не входять в основний suite): weak vs strong tests, coverage без assertions,
+  branch coverage, Mock vs fake, flaky test, tmp_path isolation, failure path.
 
 ## Можливості (лабораторна робота №5)
 - поля варіанта: vehicle_id, brand, model, year, price, mileage; перевірка positive ID, brand/model,
@@ -68,21 +84,23 @@
 - benchmark пошуку list vs dict і перевірки наявності list vs set на 1 000 / 10 000 / 100 000 записів.
 
 ## Вимоги
-Python 3.11+, PyYAML (встановлюється з пакетом); для розробки — mypy і types-PyYAML (`pip install -e ".[dev]"`)
+Python 3.11+, PyYAML (встановлюється з пакетом); для розробки — mypy і types-PyYAML (`.[dev]`);
+для тестів — pytest, pytest-cov, pytest-asyncio (`.[test]`)
 
 ## Встановлення
 ```bash
 python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
-python -m pip install -e ".[dev]"
+python -m pip install -e ".[dev,test]"
 ```
 
 ## Запуск
 ```bash
-python -m car_catalog.main                     # імпорт/експорт за config.yaml (ЛР5), з кореня проєкту
+python -m car_catalog.main                     # сценарій каталогу ЛР6: import → пошук → фільтр → info service → export
 car-catalog                                    # те саме, console script
-python -m car_catalog.main other.yaml          # інший файл конфігурації
-CAR_IMPORT_SKIP_INVALID=false python -m car_catalog.main   # strict mode без зміни YAML
+python -m car_catalog.importer.app             # імпорт/експорт за config.yaml (ЛР5), з кореня проєкту
+python -m car_catalog.importer.app other.yaml  # інший файл конфігурації
+CAR_IMPORT_SKIP_INVALID=false python -m car_catalog.importer.app   # strict mode без зміни YAML
 python -m car_catalog.importer.experiments     # експерименти ЛР5 (~10 с)
 python -m car_catalog.domain.demo              # ООП-модель каталогу (ЛР4)
 python -m car_catalog.domain.experiments       # DI vs без DI, inheritance vs composition (ЛР4)
@@ -96,13 +114,19 @@ python -m car_catalog.console --interactive    # меню ЛР1
 
 ## Тести
 ```bash
-python -m unittest discover -s tests -v
+python -m pytest -v                            # увесь suite (tests/)
+python -m pytest tests/unit/test_models.py     # один файл
+python -m pytest "tests/unit/test_models.py::test_rejects_year_outside_range"   # один test
+python -m pytest -m integration                # лише integration tests
+python -m pytest -m "not integration"          # лише unit tests
+python -m pytest -v --cov --cov-branch --cov-report=term-missing --cov-report=html   # coverage, htmlcov/index.html
+python -m pytest experiments -v                # експерименти ЛР6 (частина тестів падає навмисно)
 ```
 
 ## Перевірка типів
 ```bash
 python -m mypy                                 # src і typecheck_demo, налаштування в pyproject.toml
-sh check.sh                                    # CI-like команда: mypy + unit tests
+sh check.sh                                    # CI-ready команда: mypy + pytest з порогом coverage
 ```
 
 ## Структура проєкту
@@ -118,23 +142,27 @@ src/car_catalog/analytics.py   статистика, сортування, *args
 src/car_catalog/decorators.py  measure_time, log_operation, історія в deque (ЛР2)
 src/car_catalog/analysis.py    аналіз каталогу (ЛР2)
 src/car_catalog/benchmark.py   benchmark пошуку (ЛР2)
-src/car_catalog/main.py        точка входу: імпорт/експорт каталогу (ЛР5)
+src/car_catalog/main.py        точка входу: сценарій каталогу, покритий тестами (ЛР6)
+src/car_catalog/catalog_flow.py  import → domain-каталог → export (ЛР6)
 src/car_catalog/stream/        readers, parsers, models, filters, transformations, batches,
                                analytics, iterators, generate, pipeline, experiment, demo (ЛР3)
 src/car_catalog/domain/        models, value_objects, specifications, protocols, repositories,
-                               statistics, dto, exceptions, services, experiments, demo (ЛР4)
+                               statistics, dto, exceptions, services, experiments, demo (ЛР4),
+                               vehicle_info — external vehicle info service (ЛР6)
 src/car_catalog/importer/      exceptions, models, config, logging_config, files, readers,
-                               validators, exporters, services, experiments (ЛР5)
+                               validators, exporters, services, experiments, app (ЛР5)
 config.yaml                    конфігурація імпорту (ЛР5)
 data/vehicles.csv              вхідний CSV варіанта 5 з valid і invalid записами (ЛР5)
 data/vehicles_extra.yaml       YAML input (ЛР5)
 output/, logs/                 результати імпорту та log (створюються під час запуску, не комітяться)
 typecheck_demo/errors.py       type-checking experiment (ЛР4)
-check.sh                       CI-like перевірка: mypy + unit tests (ЛР4)
+check.sh                       CI-ready перевірка: mypy + pytest + coverage (ЛР4, ЛР6)
 data/cars.csv, data/cars_extra.csv  демонстраційні CSV (з некоректними рядками)
-tests/test_services.py         unit tests ЛР1
-tests/test_analytics.py        unit tests ЛР2
-tests/test_stream.py           unit tests ЛР3
-tests/test_domain.py           unit tests ЛР4
-tests/test_importer.py         unit tests ЛР5
+tests/conftest.py              спільні fixtures і FakeVehicleRepository (ЛР6)
+tests/unit/                    unit tests: test_models, test_catalog_service, test_validators, test_readers,
+                               test_configuration, test_exporters, test_vehicle_info, test_repository_doubles,
+                               test_files_and_time (ЛР6); unittest-тести ЛР1–5 (test_services, test_analytics,
+                               test_stream, test_domain, test_importer) запускаються тим самим pytest
+tests/integration/             test_import_pipeline, test_export_pipeline, test_application_flow (ЛР6)
+experiments/                   експерименти ЛР6 з тестуванням
 ```
