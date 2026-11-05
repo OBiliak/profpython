@@ -16,7 +16,7 @@ from car_catalog.importer.exceptions import ApplicationError, RecordValidationEr
 from car_catalog.importer.readers import FIELDS
 from car_catalog.importer.services import ImportStatistics, run_import
 from car_catalog.importer.validators import ValidationPolicy
-from car_catalog.main import main
+from car_catalog.importer.app import main
 
 WORK_DIR = Path("data/generated/experiments")
 BRANDS = ("Toyota", "Skoda", "BMW", "Volkswagen", "Hyundai", "Renault", "Kia")
