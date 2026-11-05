@@ -1,0 +1,30 @@
+schema_version: 1
+
+input:
+  path: data/vehicles.csv
+
+output:
+  path: output/vehicles.json
+  errors_path: output/invalid_vehicles.csv
+  summary_path: output/summary.json
+  backup: true
+
+validation:
+  years:
+    min: 1950
+    max: 2026
+
+filter:
+  price:
+    min: 0
+    max: 2000000
+
+processing:
+  skip_invalid: true
+  progress_every: 5
+
+logging:
+  level: INFO
+  path: logs/application.log
+  max_bytes: 20000
+  backup_count: 3
