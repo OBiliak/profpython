@@ -76,8 +76,8 @@ class ValidationPolicy:
         if not self.min_year <= record.year <= self.max_year:
             message = f"year має бути в межах {self.min_year}–{self.max_year}"
             self.reject(message, "year", line_number)
-        if record.price < 0:
-            self.reject("price не може бути від'ємною", "price", line_number)
+        if record.price <= 0:
+            self.reject("price має бути більшою за нуль", "price", line_number)
         if record.mileage < 0:
             self.reject("mileage не може бути від'ємним", "mileage", line_number)
 
