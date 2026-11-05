@@ -4,13 +4,30 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "car-catalog"
-version = "0.3.0"
+version = "0.4.0"
 description = "Car catalog laboratory project"
 readme = "README.md"
 requires-python = ">=3.11"
+
+[project.optional-dependencies]
+dev = ["mypy>=1.10"]
 
 [project.scripts]
 car-catalog = "car_catalog.main:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.mypy]
+python_version = "3.11"
+mypy_path = "src"
+files = ["src", "typecheck_demo"]
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = ["car_catalog.domain.*", "car_catalog.main", "errors"]
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_any_generics = true
+check_untyped_defs = true
+warn_return_any = true
