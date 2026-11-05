@@ -40,6 +40,15 @@ class CsvImporter:
             raise DataImportError(f"Не вдалося прочитати файл {path}") from error
 
 
+def parse_json_line(line: str, line_number: int, path: Path) -> Row:
+    """Parse one line of a JSON Lines file; the error shows the line number in the file."""
+    try:
+        row: Row = json.loads(line)
+    except json.JSONDecodeError as error:
+        raise DataImportError(f"Некоректний JSON у рядку {line_number} файлу {path}") from error
+    return row
+
+
 class JsonLinesImporter:
     """Streaming JSON Lines reader: one JSON object per line."""
 
@@ -49,9 +58,7 @@ class JsonLinesImporter:
             with retry(lambda: open_input(path)) as file:
                 for line_number, line in enumerate(file, start=1):
                     if line.strip():
-                        yield line_number, json.loads(line)
-        except json.JSONDecodeError as error:
-            raise DataImportError(f"Некоректний JSON у рядку {error.lineno} файлу {path}") from error
+                        yield line_number, parse_json_line(line, line_number, path)
         except (OSError, UnicodeDecodeError) as error:
             raise DataImportError(f"Не вдалося прочитати файл {path}") from error
 
