@@ -9,6 +9,7 @@ from conftest import FakeVehicleRepository
 from car_catalog.domain.exceptions import EntityNotFoundError
 from car_catalog.domain.models import Car
 from car_catalog.domain.protocols import EventLogger, VehicleReader, VehicleWriter
+from car_catalog.domain.repositories import InMemoryRepository
 from car_catalog.domain.services import CatalogService
 
 
@@ -52,3 +53,17 @@ def test_fake_repository_keeps_state(
 
     assert sorted(repository.items) == [2, 4, 5, 6]
     assert catalog_service.get_vehicle(2).model == "RAV4"
+
+
+def test_in_memory_repository_rejects_removing_unknown_id() -> None:
+    repository = InMemoryRepository[Car]()
+
+    with pytest.raises(EntityNotFoundError, match="ID 7"):
+        repository.remove(7)
+
+
+def test_vehicle_is_not_equal_to_other_object(make_car: Callable[..., Car]) -> None:
+    car = make_car()
+
+    assert car != "Toyota Corolla"
+    assert car == make_car()

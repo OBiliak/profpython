@@ -48,6 +48,9 @@ omit = [
 show_missing = true
 skip_covered = false
 fail_under = 80
+exclude_also = [
+    "if __name__ == .__main__.:",
+]
 
 [tool.mypy]
 python_version = "3.11"

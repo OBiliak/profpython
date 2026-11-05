@@ -58,3 +58,20 @@ def test_strict_mode_from_environment_keeps_output_unchanged(
 
 def test_import_application_returns_2_for_invalid_configuration(tmp_path: Path) -> None:
     assert app.main([str(tmp_path / "absent.yaml")]) == 2
+
+
+def test_import_application_reads_extra_yaml(
+    config_file: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.delenv("CAR_IMPORT_SKIP_INVALID", raising=False)
+    (config_file.parent / "vehicles_extra.yaml").write_text(
+        "- {vehicle_id: 21, brand: Toyota, model: Camry, year: 2022, price: 1300000, mileage: 15000}\n"
+        "- {vehicle_id: 22, brand: Kia, model: Rio, year: 1900, price: 400000, mileage: 90000}\n",
+        encoding="utf-8",
+    )
+
+    assert app.main([str(config_file)]) == 0
+
+    output = capsys.readouterr().out
+    assert "21: Toyota Camry, 2022, 1300000 грн" in output
+    assert "valid=1, invalid=1" in output

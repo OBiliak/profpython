@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from car_catalog.importer.config import load_config
+from car_catalog.importer.config import load_config, to_bool
 from car_catalog.importer.exceptions import ConfigurationError
 
 
@@ -114,3 +114,11 @@ def test_rejects_yaml_that_is_not_dictionary(tmp_path: Path) -> None:
 
     with pytest.raises(ConfigurationError, match="має бути словником"):
         load_config(path, environ={})
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [(True, True), ("yes", True), ("1", True), ("False", False), ("no", False), ("0", False)],
+)
+def test_to_bool_accepts_yaml_and_environment_values(value: object, expected: bool) -> None:
+    assert to_bool(value) is expected

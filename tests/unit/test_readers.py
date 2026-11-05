@@ -57,3 +57,12 @@ def test_malformed_files_raise_import_error(
 def test_unsupported_input_format(tmp_path: Path) -> None:
     with pytest.raises(DataImportError, match="Непідтримуваний формат"):
         select_importer(tmp_path / "vehicles.xlsx")
+
+
+def test_json_lines_importer_skips_blank_lines(tmp_path: Path) -> None:
+    path = tmp_path / "vehicles.jsonl"
+    path.write_text('{"vehicle_id": 5}\n\n{"vehicle_id": 6}\n', encoding="utf-8")
+
+    rows = list(select_importer(path).read(path))
+
+    assert [number for number, _ in rows] == [1, 3]

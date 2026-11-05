@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from car_catalog.importer.exceptions import DataExportError
-from car_catalog.importer.exporters import export_records
+from car_catalog.importer.exporters import export_records, to_json
 from car_catalog.importer.models import VehicleRecord
 from car_catalog.importer.readers import select_importer
 
@@ -88,3 +88,8 @@ def test_export_with_backup_keeps_old_version(tmp_path: Path) -> None:
 
     assert len(json.loads((tmp_path / "vehicles.json.bak").read_text(encoding="utf-8"))) == 1
     assert len(json.loads(path.read_text(encoding="utf-8"))) == 2
+
+
+def test_json_encoder_rejects_unknown_object() -> None:
+    with pytest.raises(TypeError):
+        to_json({"vehicle": object()})
