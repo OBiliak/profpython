@@ -25,7 +25,7 @@ files = ["src", "typecheck_demo"]
 warn_unused_ignores = true
 
 [[tool.mypy.overrides]]
-module = ["car_catalog.domain.*", "car_catalog.main", "errors"]
+module = ["car_catalog.domain.*", "car_catalog.domain.demo", "errors"]
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
 disallow_any_generics = true

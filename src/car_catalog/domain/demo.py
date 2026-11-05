@@ -1,4 +1,4 @@
-"""Entry point: object-oriented car catalog with type hints (laboratory work 4)."""
+"""Demonstration of the object-oriented car catalog with type hints (laboratory work 4)."""
 
 from dataclasses import FrozenInstanceError
 
