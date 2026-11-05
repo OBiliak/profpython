@@ -1,115 +1,130 @@
-"""Entry point: analysis of the car catalog (laboratory work 2)."""
+"""Entry point: streaming processing of the car catalog (laboratory work 3)."""
 
-from car_catalog.analytics import (
-    calculate_average_price,
-    calculate_average_values,
-    create_car_record,
-    create_mileage_filter,
-    create_price_filter,
-    filter_cars,
-    find_lowest_mileage_car,
-    find_most_expensive_car,
-    sort_by_price,
-    sort_cars,
-)
+from collections import Counter
+from collections.abc import Iterable
+from itertools import islice
+from pathlib import Path
+from time import perf_counter
+
 from car_catalog.config import CURRENCY
-from car_catalog.data import cars
-from car_catalog.decorators import operation_history
-from car_catalog.processors import (
-    count_cars_by_brand,
-    create_car_index,
-    filter_by_year,
-    find_car_by_id,
-    get_unique_brands,
-    group_by_brand,
-    group_by_brand_and_year,
+from car_catalog.stream.analytics import (
+    calculate_statistics,
+    count_by_brand_sorted,
+    find_first,
+    running_average_prices,
+    take_first_n,
 )
+from car_catalog.stream.batches import batched_cars
+from car_catalog.stream.generate import ensure_dataset
+from car_catalog.stream.iterators import CarIdRange, generate_ids
+from car_catalog.stream.models import CarRecord
+from car_catalog.stream.pipeline import build_pipeline
 
-YEAR_RANGE = (2016, 2019)
+DEMO_FILES = (Path("data/cars.csv"), Path("data/cars_extra.csv"))
+LARGE_DATASET_SIZE = 100_000
 
 
-def format_car(car: dict) -> str:
-    """Return one line with all fields of a car record."""
+def format_car(car: CarRecord | None) -> str:
+    """Return one line with all fields of a car or a message for None."""
+    if car is None:
+        return "автомобіль не знайдено"
     return (
-        f"{car['id']:>3}  {car['brand']:<11} {car['model']:<8} {car['year']}  "
-        f"{car['price']:>11.2f} {CURRENCY}  {car['mileage']:>7} км"
+        f"{car.id:>6}  {car.brand:<11} {car.model:<12} {car.year}  "
+        f"{car.price:>11.2f} {CURRENCY}  {car.mileage:>7} км"
     )
 
 
-def print_cars(title: str, items: list[dict]) -> None:
-    """Print a title and a table of car records."""
+def print_cars(title: str, cars: list[CarRecord]) -> None:
+    """Print a title and a table of cars."""
     print(f"\n{title}")
-    print("-" * 64)
-    if not items:
-        print("Автомобілів не знайдено.")
-    for car in items:
+    for car in cars:
         print(format_car(car))
 
 
-def print_car(title: str, car: dict | None) -> None:
-    """Print a title and one car record or a message for an empty result."""
+def show_iterator_protocol() -> None:
+    """Show iter(), next(), StopIteration, a custom iterator and an infinite generator."""
+    print("\n--- Iterator protocol ---")
+    ids = CarIdRange(1, 3)
+    print(f"iter(ids) is ids: {iter(ids) is ids}")
+    print(f"next(ids): {next(ids)}, {next(ids)}, {next(ids)}")
+    try:
+        next(ids)
+    except StopIteration:
+        print("next(ids) після останнього ID -> StopIteration")
+    print(f"Повторний прохід вичерпаного iterator: {list(ids)}")
+    print(f"islice(generate_ids(1000), 5): {list(islice(generate_ids(1000), 5))}")
+
+
+def show_statistics(title: str, cars: Iterable[CarRecord]) -> None:
+    """Print streaming statistics of cars."""
+    stats = calculate_statistics(cars)
     print(f"\n{title}")
-    print(format_car(car) if car else "Автомобілів не знайдено.")
+    print(f"Кількість: {stats['count']}")
+    print(f"Середня ціна: {stats['average_price']:.2f} {CURRENCY}")
+    print(f"Найдорожчий: {format_car(stats['most_expensive'])}")
+    print(f"Найменший пробіг: {format_car(stats['lowest_mileage'])}")
 
 
-def print_statistics() -> None:
-    """Print unique brands, counts by brand and price statistics."""
-    print(f"\nУнікальні марки: {sorted(get_unique_brands(cars))}")
-    print("\nКількість автомобілів кожної марки:")
-    for brand, count in count_cars_by_brand(cars).most_common():
-        print(f"  {brand:<11} {count}")
-    average = calculate_average_price(cars)
-    print(f"Середня ціна: {average:.2f} {CURRENCY}")
-    print_car("Найдорожчий автомобіль:", find_most_expensive_car(cars))
-    print_car("Автомобіль із найменшим пробігом:", find_lowest_mileage_car(cars))
+def show_demo_files() -> None:
+    """Run the pipeline on two small demo CSV files joined by chain."""
+    print("\n--- Демонстраційні файли: data/cars.csv + data/cars_extra.csv ---")
+    stats = Counter()
+    first_cars = list(islice(build_pipeline(DEMO_FILES, stats), 5))
+    print_cars("Перші 5 валідних записів (islice):", first_cars)
+
+    stats = Counter()
+    show_statistics("Статистика за один прохід:", build_pipeline(DEMO_FILES, stats))
+    print(f"Валідних записів: {stats['valid']}, невалідних: {stats['invalid']}")
+
+    toyota = build_pipeline(DEMO_FILES, Counter(), brands={"toyota"}, min_year=2018)
+    print_cars("Фільтр: марка Toyota, рік від 2018:", list(toyota))
+
+    averages = running_average_prices(build_pipeline(DEMO_FILES, Counter()))
+    first_averages = [f"{value:.2f}" for value in islice(averages, 5)]
+    print(f"\nStreaming average price (перші 5 кроків): {first_averages}")
+
+    cars = build_pipeline(DEMO_FILES, Counter())
+    cheap = take_first_n(cars, lambda car: car.price < 500_000, 3)
+    print_cars("Перші 3 автомобілі з ціною до 500000 грн:", cheap)
+
+    print("\nBatching по 4 записи:")
+    batches = batched_cars(build_pipeline(DEMO_FILES, Counter()), 4)
+    for number, batch in enumerate(batches, start=1):
+        print(f"  batch {number}: розмір {len(batch)}, ID {[car.id for car in batch]}")
+
+    groups = count_by_brand_sorted(build_pipeline(DEMO_FILES, Counter()))
+    print(f"\ngroupby за маркою після сортування: {groups}")
 
 
-def print_search_and_groups() -> None:
-    """Print search by ID and grouping results."""
-    index = create_car_index(cars)
-    print_car("Пошук за ID 8 (dict-index):", find_car_by_id(index, 8))
-    print_car("Пошук за ID 99 (dict-index):", find_car_by_id(index, 99))
-    print("\nГрупування за маркою (моделі):")
-    for brand, items in group_by_brand(cars).items():
-        print(f"  {brand:<11} {[car['model'] for car in items]}")
-    print("\nВкладене групування: марка → рік → моделі:")
-    for brand, years in group_by_brand_and_year(cars).items():
-        print(f"  {brand:<11} {dict(sorted(years.items()))}")
+def show_large_dataset() -> None:
+    """Run the pipeline on a generated dataset with LARGE_DATASET_SIZE records."""
+    path = ensure_dataset(LARGE_DATASET_SIZE)
+    print(f"\n--- Великий набір: {path} ({LARGE_DATASET_SIZE} записів) ---")
+    start = perf_counter()
+    first = next(build_pipeline([path], Counter()))
+    print(f"Time to first result: {(perf_counter() - start) * 1000:.3f} мс -> {format_car(first)}")
 
+    stats = Counter()
+    start = perf_counter()
+    show_statistics("Статистика за один прохід:", build_pipeline([path], stats))
+    print(f"Валідних записів: {stats['valid']}, невалідних: {stats['invalid']}")
+    print(f"Час повного проходу: {perf_counter() - start:.3f} с")
 
-def print_functional_examples() -> None:
-    """Print examples of *args, **kwargs, closures and universal functions."""
-    prices = (cars[0]["price"], cars[1]["price"], cars[2]["price"])
-    average = calculate_average_values(*prices)
-    print(f"\n*args: середня ціна перших трьох = {average:.2f} {CURRENCY}")
-    record = create_car_record(
-        id=11, brand="Honda", model="Civic", year=2022, price=980000.0, mileage=15000
-    )
-    print(f"**kwargs: створено запис {record}")
-    is_affordable = create_price_filter(700000)
-    is_low_mileage = create_mileage_filter(100000)
-    print_cars(
-        "Closure-фільтри: ціна до 700000 грн і пробіг до 100000 км:",
-        filter_cars(cars, is_affordable, is_low_mileage),
-    )
-    print_cars("Універсальне сортування за пробігом:", sort_cars(cars, "mileage"))
+    batches = batched_cars(build_pipeline([path], Counter()), 10_000)
+    print(f"Batching по 10000: {[len(batch) for batch in batches]}")
+
+    cars = build_pipeline([path], Counter())
+    found = find_first(cars, lambda car: car.price > 2_400_000 and car.year == 2026)
+    print(f"Перший автомобіль 2026 року дорожчий за 2400000 грн: {format_car(found)}")
+    print(f"groupby за маркою: {count_by_brand_sorted(build_pipeline([path], Counter()))}")
 
 
 def main() -> None:
-    """Run the analysis of the demo car catalog."""
-    print("=== Аналіз каталогу автомобілів (лабораторна робота №2, варіант 5) ===")
-    print_cars("Усі автомобілі:", cars)
-    print_statistics()
-    print_cars("Сортування за ціною (від дешевших):", sort_by_price(cars))
-    print_cars(
-        f"Фільтрація за роком {YEAR_RANGE[0]}–{YEAR_RANGE[1]}:",
-        filter_by_year(cars, *YEAR_RANGE),
-    )
-    print_search_and_groups()
-    print_functional_examples()
-    print("\nІсторія останніх операцій (deque, maxlen=5):")
-    for label, size in operation_history:
-        print(f"  {label}: кількість записів у результаті = {size}")
+    """Run the streaming demonstration of laboratory work 3."""
+    print("=== Потокова обробка каталогу автомобілів (лабораторна робота №3, варіант 5) ===")
+    show_iterator_protocol()
+    show_demo_files()
+    show_large_dataset()
 
 
 if __name__ == "__main__":
