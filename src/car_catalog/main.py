@@ -13,6 +13,7 @@ from car_catalog.domain.vehicle_info import (
     AsyncVehicleInfoService,
     LocalAsyncVehicleInfoClient,
     LocalVehicleInfoProvider,
+    VehicleInfoError,
     VehicleInfoService,
 )
 from car_catalog.importer.config import load_config
@@ -54,7 +55,11 @@ async def show_countries_async(vehicles: list[Vehicle]) -> None:
     service = AsyncVehicleInfoService(LocalAsyncVehicleInfoClient())
     print("\n--- Async vehicle info ---")
     for vehicle in vehicles:
-        country = await service.get_country(vehicle)
+        try:
+            country = await service.get_country(vehicle)
+        except VehicleInfoError as error:
+            print(f"  {vehicle.brand} {vehicle.model}: {error}")
+            continue
         print(f"  {vehicle.brand} {vehicle.model}: {country}")
 
 

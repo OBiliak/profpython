@@ -50,6 +50,9 @@ def show_formats(config: AppConfig) -> None:
     print(f"Перший рядок JSON Lines: {first_line}")
 
     extra = config.input.path.with_name("vehicles_extra.yaml")
+    if not extra.is_file():
+        print(f"\nYAML input {extra.as_posix()} не знайдено, демонстрацію YAML пропущено")
+        return
     print(f"\nYAML input {extra.as_posix()} -> {type(select_importer(extra)).__name__}:")
     statistics = ImportStatistics()
     errors: list[InvalidRecord] = []

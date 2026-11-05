@@ -15,11 +15,13 @@ def test_main_runs_catalog_scenario(config_file: Path, capsys: pytest.CaptureFix
     exit_code = main([str(config_file)])
 
     output = capsys.readouterr().out
-    exported = json.loads((config_file.parent / "output" / "catalog_2019_2022.json").read_text(encoding="utf-8"))
+    exported_path = config_file.parent / "output" / "catalog_2019_2022.json"
+    exported = json.loads(exported_path.read_text(encoding="utf-8"))
     assert exit_code == 0
     assert "усього 4, valid 3, invalid 1 (рядки 4)" in output
     assert "Найдорожчий: Автомобіль BMW X5" in output
     assert "пропущено: Не вдалося отримати довідку для ID 17" in output
+    assert "Peugeot 308: Не вдалося отримати довідку для ID 17" in output
     assert [item["vehicle_id"] for item in exported] == [5, 17]
 
 
@@ -31,7 +33,7 @@ def test_main_reports_missing_configuration(
 
 
 def test_import_application_writes_all_output_files(
-    config_file: Path, monkeypatch: pytest.MonkeyPatch
+    config_file: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     monkeypatch.delenv("CAR_IMPORT_SKIP_INVALID", raising=False)
 
@@ -42,6 +44,7 @@ def test_import_application_writes_all_output_files(
     assert summary["statistics"]["exported"] == 3
     assert summary["invalid_lines"] == [4]
     assert (config_file.parent / "logs" / "test.log").exists()
+    assert "демонстрацію YAML пропущено" in capsys.readouterr().out
 
 
 def test_strict_mode_from_environment_keeps_output_unchanged(
