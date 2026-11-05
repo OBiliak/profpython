@@ -40,8 +40,8 @@ class ModelSpecification(VehicleSpecification):
         self.model = model.strip().lower()
 
     def is_satisfied_by(self, vehicle: Vehicle) -> bool:
-        """Return True if the model contains the text."""
-        return self.model in vehicle.model.lower()
+        """Return True if the model contains the text; an empty text matches nothing."""
+        return bool(self.model) and self.model in vehicle.model.lower()
 
 
 class YearRangeSpecification(VehicleSpecification):
