@@ -1,4 +1,4 @@
-"""Entry point: streaming processing of the car catalog (laboratory work 3)."""
+"""Streaming processing demo of the car catalog (laboratory work 3)."""
 
 from collections import Counter
 from collections.abc import Iterable
