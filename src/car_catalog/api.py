@@ -1,15 +1,18 @@
 """REST API of the car catalog (FastAPI, laboratory work 8): uvicorn car_catalog.api:app."""
 
 import logging
-from collections.abc import Iterator
+from collections.abc import AsyncIterator, Iterator
+from contextlib import asynccontextmanager
 from typing import Annotated, Any, Literal
 
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Query, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+import httpx
 from sqlalchemy.orm import Session
 
 from car_catalog import __version__
+from car_catalog.external_api import ClientSettings, create_client
 from car_catalog.persistence.database import SessionLocal
 from car_catalog.persistence.exceptions import DatabaseConstraintError
 from car_catalog.persistence.models import MAX_YEAR, MIN_YEAR, Car, Manufacturer
@@ -26,7 +29,19 @@ from car_catalog.schemas import (
 
 logger = logging.getLogger("car_catalog.api")
 
+
+@asynccontextmanager
+async def lifespan(application: FastAPI) -> AsyncIterator[None]:
+    """Create one shared httpx.AsyncClient at startup and close it at shutdown."""
+    settings = ClientSettings.from_env()
+    application.state.client_settings = settings
+    application.state.http_client = create_client(settings)
+    yield
+    await application.state.http_client.aclose()
+
+
 app = FastAPI(
+    lifespan=lifespan,
     title="Car Catalog API",
     description="REST API каталогу автомобілів (лабораторна робота №8, варіант 5): cars і manufacturers.",
     version=__version__,
@@ -46,7 +61,14 @@ def get_session() -> Iterator[Session]:
         yield session
 
 
+def get_http_client(request: Request) -> httpx.AsyncClient:
+    """Dependency: the shared AsyncClient created in lifespan."""
+    client: httpx.AsyncClient = request.app.state.http_client
+    return client
+
+
 SessionDep = Annotated[Session, Depends(get_session)]
+HttpClientDep = Annotated[httpx.AsyncClient, Depends(get_http_client)]
 
 
 @app.exception_handler(HTTPException)
