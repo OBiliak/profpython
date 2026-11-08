@@ -1,5 +1,6 @@
 """REST API of the car catalog (FastAPI, laboratory work 8): uvicorn car_catalog.api:app."""
 
+import asyncio
 import logging
 from collections.abc import AsyncIterator, Iterator
 from contextlib import asynccontextmanager
@@ -12,13 +13,16 @@ import httpx
 from sqlalchemy.orm import Session
 
 from car_catalog import __version__
-from car_catalog.external_api import ClientSettings, create_client
+from car_catalog.external_api import ClientSettings, create_client, fetch_cars
 from car_catalog.persistence.database import SessionLocal
 from car_catalog.persistence.exceptions import DatabaseConstraintError
 from car_catalog.persistence.models import MAX_YEAR, MIN_YEAR, Car, Manufacturer
 from car_catalog.persistence.repositories import CarRepository, ManufacturerRepository
 from car_catalog.persistence.services import CarCatalogService
 from car_catalog.schemas import (
+    BatchError,
+    BatchRequest,
+    BatchResult,
     CarCreate,
     CarRead,
     CarUpdate,
@@ -52,6 +56,7 @@ app = FastAPI(
     ],
 )
 
+BATCH_TIMEOUT = 10.0
 NOT_FOUND: dict[int | str, dict[str, Any]] = {404: {"model": ErrorResponse, "description": "Запис не знайдено"}}
 
 
@@ -167,6 +172,26 @@ def create_car(data: CarCreate, session: SessionDep, background_tasks: Backgroun
     car = CarRepository(session).add(Car(**data.model_dump()))
     background_tasks.add_task(log_new_car, car.id, car.describe())
     return car
+
+
+@app.post(
+    "/cars/batch",
+    response_model=BatchResult,
+    responses={504: {"model": ErrorResponse, "description": "Операція не завершилася вчасно"}},
+    tags=["cars"],
+)
+async def load_cars_batch(data: BatchRequest, request: Request, client: HttpClientDep) -> BatchResult:
+    """Load a group of cars concurrently through GET /cars/{id} (HTTPX, Task, gather, Semaphore, retry)."""
+    settings: ClientSettings = request.app.state.client_settings
+    try:
+        result = await asyncio.wait_for(fetch_cars(client, data.car_ids, settings), timeout=BATCH_TIMEOUT)
+    except TimeoutError as error:
+        raise HTTPException(status_code=504, detail="Пакетне завантаження не завершилося вчасно") from error
+    return BatchResult(
+        cars=[CarRead(**car) for car in result.cars],
+        errors=[BatchError(car_id=car_id, error=text) for car_id, text in result.errors],
+        max_concurrency=result.max_concurrency,
+    )
 
 
 @app.patch("/cars/{car_id}", response_model=CarRead, responses=NOT_FOUND, tags=["cars"])
