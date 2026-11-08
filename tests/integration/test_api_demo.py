@@ -1,11 +1,11 @@
-"""Integration test of python -m car_catalog.main: a real Uvicorn server and real HTTP requests."""
+"""Integration test of python -m car_catalog.api_demo: a real Uvicorn server and real HTTP requests."""
 
 import socket
 from pathlib import Path
 
 import pytest
 
-from car_catalog.main import main
+from car_catalog.api_demo import main
 
 pytestmark = pytest.mark.integration
 

@@ -1,6 +1,6 @@
-"""Entry point: REST API of the car catalog on a real Uvicorn server (laboratory work 8, variant 5).
+"""REST API demo of laboratory work 8 on a real Uvicorn server: python -m car_catalog.api_demo.
 
-python -m car_catalog.main starts the API at http://127.0.0.1:8000, sends HTTP requests to it with
+It starts the API at http://127.0.0.1:8000, sends HTTP requests to it with
 httpx.AsyncClient and stops the server. To work with Swagger UI: uvicorn car_catalog.api:app
 """
 
