@@ -1,4 +1,4 @@
-"""Entry point: the car catalog with a SQLite database (laboratory work 7, variant 5)."""
+"""Car catalog with a SQLite database (laboratory work 7): python -m car_catalog.database_app."""
 
 from pathlib import Path
 

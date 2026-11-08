@@ -1,10 +1,10 @@
-"""Integration test of the entry point of laboratory work 7 (python -m car_catalog.main)."""
+"""Integration test of the database scenario of laboratory work 7 (python -m car_catalog.database_app)."""
 
 from pathlib import Path
 
 import pytest
 
-from car_catalog.main import main
+from car_catalog.database_app import main
 
 pytestmark = pytest.mark.integration
 
