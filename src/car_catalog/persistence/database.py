@@ -1,18 +1,19 @@
 """Database engine and session factory of the car catalog (SQLite + SQLAlchemy)."""
 
-import os
 from typing import Any
 
 from sqlalchemy import Engine, create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
+
+from car_catalog.config import get_settings
 
 DATABASE_PATH = "car_catalog.db"
 DATABASE_URL = f"sqlite:///{DATABASE_PATH}"
 
 
 def database_url() -> str:
-    """URL of the working database: CAR_CATALOG_DATABASE_URL or sqlite:///car_catalog.db."""
-    return os.environ.get("CAR_CATALOG_DATABASE_URL", DATABASE_URL)
+    """URL of the working database from the settings (environment variable DATABASE_URL)."""
+    return get_settings().database_url
 
 
 def enable_foreign_keys(dbapi_connection: Any, connection_record: Any) -> None:
