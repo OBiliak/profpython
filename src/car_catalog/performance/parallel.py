@@ -24,10 +24,20 @@ def split_batches(cars: list[CarRecord], parts: int) -> list[list[CarRecord]]:
 # --- CPU-bound: residual values ---
 
 
+def batch_residual_values(batch: list[CarRecord]) -> list[float]:
+    """Residual values of one batch of cars."""
+    return [car_residual_value(car) for car in batch]
+
+
 def residual_values_threads(cars: list[CarRecord], workers: int) -> list[float]:
-    """Residual values in a ThreadPoolExecutor (because of the GIL there is no speedup)."""
+    """Residual values in a ThreadPoolExecutor, one batch per thread.
+
+    Batches, not single cars: map over 250 000 items creates 250 000 Future objects
+    (chunksize works only for processes). Because of the GIL there is still no speedup.
+    """
     with ThreadPoolExecutor(max_workers=workers) as executor:
-        return list(executor.map(car_residual_value, cars, chunksize=2000))
+        parts = list(executor.map(batch_residual_values, split_batches(cars, workers)))
+    return [value for part in parts for value in part]
 
 
 def residual_values_processes(
