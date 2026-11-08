@@ -1,0 +1,1028 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Car Catalog API",
+    "description": "REST API каталогу автомобілів (варіант 5): cars, manufacturers і health check.",
+    "version": "0.9.0"
+  },
+  "paths": {
+    "/": {
+      "get": {
+        "tags": [
+          "service"
+        ],
+        "summary": "Root",
+        "description": "Short information about the API.",
+        "operationId": "root__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Root  Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "service"
+        ],
+        "summary": "Health",
+        "description": "Health check for Docker and monitoring: the service answers and the database executes SELECT 1.",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "База даних недоступна",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cars": {
+      "get": {
+        "tags": [
+          "cars"
+        ],
+        "summary": "List Cars",
+        "description": "Search by brand/model, filter by year, sorting and pagination.",
+        "operationId": "list_cars_cars_get",
+        "parameters": [
+          {
+            "name": "brand",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Марка (виробник), без урахування регістру",
+              "title": "Brand"
+            },
+            "description": "Марка (виробник), без урахування регістру"
+          },
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Частина назви моделі",
+              "title": "Model"
+            },
+            "description": "Частина назви моделі"
+          },
+          {
+            "name": "min_year",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 2026,
+                  "minimum": 1950
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Min Year"
+            }
+          },
+          {
+            "name": "max_year",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 2026,
+                  "minimum": 1950
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Max Year"
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "id",
+                "year",
+                "price",
+                "mileage"
+              ],
+              "type": "string",
+              "default": "id",
+              "title": "Sort By"
+            }
+          },
+          {
+            "name": "descending",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Descending"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CarRead"
+                  },
+                  "title": "Response List Cars Cars Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "cars"
+        ],
+        "summary": "Create Car",
+        "description": "Add a car; the manufacturer must exist, the VIN must be unique.",
+        "operationId": "create_car_cars_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CarCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CarRead"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Запис не знайдено",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "VIN вже існує",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cars/statistics": {
+      "get": {
+        "tags": [
+          "cars"
+        ],
+        "summary": "Car Statistics",
+        "description": "The most expensive car, the average price and the car with the lowest mileage.",
+        "operationId": "car_statistics_cars_statistics_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogStatistics"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cars/{car_id}": {
+      "get": {
+        "tags": [
+          "cars"
+        ],
+        "summary": "Get Car",
+        "description": "One car by ID.",
+        "operationId": "get_car_cars__car_id__get",
+        "parameters": [
+          {
+            "name": "car_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Car Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CarRead"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Запис не знайдено",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "cars"
+        ],
+        "summary": "Update Car",
+        "description": "Change the price and/or the mileage of a car.",
+        "operationId": "update_car_cars__car_id__patch",
+        "parameters": [
+          {
+            "name": "car_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Car Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CarUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CarRead"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Запис не знайдено",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "cars"
+        ],
+        "summary": "Delete Car",
+        "description": "Delete a car.",
+        "operationId": "delete_car_cars__car_id__delete",
+        "parameters": [
+          {
+            "name": "car_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Car Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "Запис не знайдено",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cars/batch": {
+      "post": {
+        "tags": [
+          "cars"
+        ],
+        "summary": "Load Cars Batch",
+        "description": "Load a group of cars concurrently through GET /cars/{id} (HTTPX, Task, gather, Semaphore, retry).",
+        "operationId": "load_cars_batch_cars_batch_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchResult"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Операція не завершилася вчасно",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/manufacturers": {
+      "get": {
+        "tags": [
+          "manufacturers"
+        ],
+        "summary": "List Manufacturers",
+        "description": "All manufacturers sorted by name.",
+        "operationId": "list_manufacturers_manufacturers_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ManufacturerRead"
+                  },
+                  "type": "array",
+                  "title": "Response List Manufacturers Manufacturers Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/manufacturers/{manufacturer_id}/cars": {
+      "get": {
+        "tags": [
+          "manufacturers"
+        ],
+        "summary": "Manufacturer Cars",
+        "description": "Cars of one manufacturer (relationship manufacturer.cars).",
+        "operationId": "manufacturer_cars_manufacturers__manufacturer_id__cars_get",
+        "parameters": [
+          {
+            "name": "manufacturer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Manufacturer Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CarRead"
+                  },
+                  "title": "Response Manufacturer Cars Manufacturers  Manufacturer Id  Cars Get"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Запис не знайдено",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "BatchError": {
+        "properties": {
+          "car_id": {
+            "type": "integer",
+            "title": "Car Id"
+          },
+          "error": {
+            "type": "string",
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "car_id",
+          "error"
+        ],
+        "title": "BatchError",
+        "description": "A car of the group that could not be loaded."
+      },
+      "BatchRequest": {
+        "properties": {
+          "car_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Car Ids",
+            "examples": [
+              [
+                1,
+                2,
+                5,
+                999
+              ]
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "car_ids"
+        ],
+        "title": "BatchRequest",
+        "description": "Body of POST /cars/batch: IDs of a group of cars."
+      },
+      "BatchResult": {
+        "properties": {
+          "cars": {
+            "items": {
+              "$ref": "#/components/schemas/CarRead"
+            },
+            "type": "array",
+            "title": "Cars"
+          },
+          "errors": {
+            "items": {
+              "$ref": "#/components/schemas/BatchError"
+            },
+            "type": "array",
+            "title": "Errors"
+          },
+          "max_concurrency": {
+            "type": "integer",
+            "title": "Max Concurrency"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cars",
+          "errors",
+          "max_concurrency"
+        ],
+        "title": "BatchResult",
+        "description": "Result of POST /cars/batch."
+      },
+      "CarCreate": {
+        "properties": {
+          "manufacturer_id": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Manufacturer Id",
+            "examples": [
+              1
+            ]
+          },
+          "model": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Model",
+            "examples": [
+              "Prius"
+            ]
+          },
+          "year": {
+            "type": "integer",
+            "maximum": 2026.0,
+            "minimum": 1950.0,
+            "title": "Year",
+            "examples": [
+              2020
+            ]
+          },
+          "price": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Price",
+            "examples": [
+              720000
+            ]
+          },
+          "mileage": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Mileage",
+            "examples": [
+              45000
+            ]
+          },
+          "vin": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[A-HJ-NPR-Z0-9]{17}$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vin",
+            "examples": [
+              "JTDKN3DU0A0000011"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "manufacturer_id",
+          "model",
+          "year",
+          "price",
+          "mileage"
+        ],
+        "title": "CarCreate",
+        "description": "Body of POST /cars."
+      },
+      "CarRead": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "brand": {
+            "type": "string",
+            "title": "Brand"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "year": {
+            "type": "integer",
+            "title": "Year"
+          },
+          "price": {
+            "type": "number",
+            "title": "Price"
+          },
+          "mileage": {
+            "type": "integer",
+            "title": "Mileage"
+          },
+          "vin": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vin"
+          },
+          "manufacturer_id": {
+            "type": "integer",
+            "title": "Manufacturer Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "brand",
+          "model",
+          "year",
+          "price",
+          "mileage",
+          "vin",
+          "manufacturer_id"
+        ],
+        "title": "CarRead",
+        "description": "Car in responses."
+      },
+      "CarUpdate": {
+        "properties": {
+          "price": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price",
+            "examples": [
+              505000
+            ]
+          },
+          "mileage": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mileage",
+            "examples": [
+              90000
+            ]
+          }
+        },
+        "type": "object",
+        "title": "CarUpdate",
+        "description": "Body of PATCH /cars/{car_id}: a new price and/or a new mileage."
+      },
+      "CatalogStatistics": {
+        "properties": {
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "average_price": {
+            "type": "number",
+            "title": "Average Price"
+          },
+          "most_expensive": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CarRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lowest_mileage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CarRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "count",
+          "average_price",
+          "most_expensive",
+          "lowest_mileage"
+        ],
+        "title": "CatalogStatistics",
+        "description": "Statistics of laboratory work 1: the most expensive car, average price, the lowest mileage."
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "title": "Error"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "ErrorResponse",
+        "description": "Structured error of the API."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "ok",
+            "title": "Status"
+          },
+          "environment": {
+            "type": "string",
+            "title": "Environment"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "database": {
+            "type": "string",
+            "const": "ok",
+            "title": "Database"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "environment",
+          "version",
+          "database"
+        ],
+        "title": "HealthResponse",
+        "description": "Answer of GET /health: the service and its database work."
+      },
+      "ManufacturerRead": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "country": {
+            "type": "string",
+            "title": "Country"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "country"
+        ],
+        "title": "ManufacturerRead",
+        "description": "Manufacturer in responses."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "cars",
+      "description": "Автомобілі: CRUD, пошук, фільтр, статистика"
+    },
+    {
+      "name": "manufacturers",
+      "description": "Виробники та їхні автомобілі"
+    },
+    {
+      "name": "service",
+      "description": "Службові endpoints"
+    }
+  ]
+}
