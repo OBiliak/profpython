@@ -2,7 +2,7 @@
 
 import pytest
 
-from car_catalog.main import main
+from car_catalog.performance_demo import main
 
 
 @pytest.mark.integration

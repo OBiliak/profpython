@@ -1,4 +1,4 @@
-"""Performance demo of laboratory work 9: python -m car_catalog.main [number of cars].
+"""Performance demo of laboratory work 9: python -m car_catalog.performance_demo [number of cars].
 
 Profiling of the large catalog (cProfile, tracemalloc, timeit), then the optimizations of the
 bottleneck: threads, processes, NumPy, Lock for shared state and lru_cache with invalidation.
