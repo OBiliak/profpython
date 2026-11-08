@@ -10,9 +10,12 @@ import httpx
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Query, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from car_catalog import __version__
+from car_catalog.config import get_settings
 from car_catalog.external_api import ClientSettings, create_client, fetch_cars
 from car_catalog.persistence.database import (
     create_database_engine,
@@ -32,6 +35,7 @@ from car_catalog.schemas import (
     CarUpdate,
     CatalogStatistics,
     ErrorResponse,
+    HealthResponse,
     ManufacturerRead,
 )
 
@@ -43,6 +47,11 @@ async def lifespan(application: FastAPI) -> AsyncIterator[None]:
     """At startup: database engine and one shared httpx.AsyncClient; at shutdown: close both."""
     engine = create_database_engine(database_url())
     application.state.session_factory = create_session_factory(engine)
+    logger.info(
+        "Car Catalog API started: environment=%s, database=%s",
+        get_settings().environment,
+        engine.url.render_as_string(hide_password=True),  # a password in the URL is never logged
+    )
     settings = ClientSettings.from_env()
     application.state.client_settings = settings
     application.state.http_client = create_client(settings)
@@ -54,7 +63,7 @@ async def lifespan(application: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(
     lifespan=lifespan,
     title="Car Catalog API",
-    description="REST API каталогу автомобілів (лабораторна робота №8, варіант 5): cars і manufacturers.",
+    description="REST API каталогу автомобілів (варіант 5): cars, manufacturers і health check.",
     version=__version__,
     openapi_tags=[
         {"name": "cars", "description": "Автомобілі: CRUD, пошук, фільтр, статистика"},
@@ -88,7 +97,13 @@ HttpClientDep = Annotated[httpx.AsyncClient, Depends(get_http_client)]
 @app.exception_handler(HTTPException)
 async def http_error_handler(request: Request, error: HTTPException) -> JSONResponse:
     """Structured error response: {"error": ..., "detail": ...}."""
-    names = {404: "not_found", 409: "conflict", 422: "validation_error", 504: "timeout"}
+    names = {
+        404: "not_found",
+        409: "conflict",
+        422: "validation_error",
+        503: "service_unavailable",
+        504: "timeout",
+    }
     body = ErrorResponse(error=names.get(error.status_code, "http_error"), detail=str(error.detail))
     return JSONResponse(status_code=error.status_code, content=body.model_dump())
 
@@ -133,6 +148,26 @@ def log_new_car(car_id: int, description: str) -> None:
 async def root() -> dict[str, str]:
     """Short information about the API."""
     return {"name": "Car Catalog API", "version": __version__, "docs": "/docs"}
+
+
+@app.get(
+    "/health",
+    tags=["service"],
+    response_model=HealthResponse,
+    responses={503: {"model": ErrorResponse, "description": "База даних недоступна"}},
+)
+def health(session: SessionDep) -> HealthResponse:
+    """Health check for Docker and monitoring: the service answers and the database executes SELECT 1."""
+    try:
+        session.execute(text("SELECT 1"))
+    except SQLAlchemyError as error:
+        logger.error("Health check failed: %s", error)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="База даних недоступна"
+        ) from error
+    return HealthResponse(
+        status="ok", environment=get_settings().environment, version=__version__, database="ok"
+    )
 
 
 @app.get("/cars", response_model=list[CarRead], tags=["cars"])

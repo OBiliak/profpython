@@ -1,5 +1,7 @@
 """Pydantic schemas of the REST API: request bodies, responses and validation rules."""
 
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from car_catalog.persistence.models import MAX_YEAR, MIN_YEAR
@@ -85,6 +87,15 @@ class BatchResult(BaseModel):
     cars: list[CarRead]
     errors: list[BatchError]
     max_concurrency: int
+
+
+class HealthResponse(BaseModel):
+    """Answer of GET /health: the service and its database work."""
+
+    status: Literal["ok"]
+    environment: str
+    version: str
+    database: Literal["ok"]
 
 
 class ErrorResponse(BaseModel):
