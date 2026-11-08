@@ -19,7 +19,7 @@ import uvicorn
 from car_catalog.api import app
 from car_catalog.external_api import ClientSettings, create_client, load_car_group
 from car_catalog.importer.logging_config import configure_console_logging
-from car_catalog.persistence.database import DATABASE_PATH, SessionLocal
+from car_catalog.persistence.database import DATABASE_PATH, create_database_engine, create_session_factory
 from car_catalog.persistence.migrations import upgrade_database
 from car_catalog.persistence.seed import seed_catalog
 
@@ -34,7 +34,14 @@ class ServerThread:
     def __init__(self, port: int) -> None:
         config = uvicorn.Config(app, host=HOST, port=port, log_level="warning")
         self.server = uvicorn.Server(config)
-        self.thread = threading.Thread(target=self.server.run, daemon=True)
+        self.thread = threading.Thread(target=self.run, daemon=True)
+
+    def run(self) -> None:
+        """Body of the thread; Uvicorn calls sys.exit(1) if the port is busy."""
+        try:
+            self.server.run()
+        except SystemExit:
+            pass
 
     def start(self) -> None:
         """Start the server and wait until it accepts connections."""
@@ -53,9 +60,12 @@ class ServerThread:
 def prepare_database() -> None:
     """Recreate car_catalog.db with Alembic migrations and fill it with the demo cars."""
     Path(DATABASE_PATH).unlink(missing_ok=True)
-    upgrade_database(f"sqlite:///{DATABASE_PATH}")
-    with SessionLocal() as session:
+    url = f"sqlite:///{DATABASE_PATH}"
+    upgrade_database(url)
+    engine = create_database_engine(url)
+    with create_session_factory(engine)() as session:
         seed_catalog(session)
+    engine.dispose()
 
 
 def show(response: httpx.Response) -> Any:

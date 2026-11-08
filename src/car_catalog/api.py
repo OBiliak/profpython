@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from car_catalog import __version__
 from car_catalog.external_api import ClientSettings, create_client, fetch_cars
-from car_catalog.persistence.database import SessionLocal
+from car_catalog.persistence.database import create_database_engine, create_session_factory, database_url
 from car_catalog.persistence.exceptions import DatabaseConstraintError
 from car_catalog.persistence.models import MAX_YEAR, MIN_YEAR, Car, Manufacturer
 from car_catalog.persistence.repositories import CarRepository, ManufacturerRepository
@@ -36,12 +36,15 @@ logger = logging.getLogger("car_catalog.api")
 
 @asynccontextmanager
 async def lifespan(application: FastAPI) -> AsyncIterator[None]:
-    """Create one shared httpx.AsyncClient at startup and close it at shutdown."""
+    """At startup: database engine and one shared httpx.AsyncClient; at shutdown: close both."""
+    engine = create_database_engine(database_url())
+    application.state.session_factory = create_session_factory(engine)
     settings = ClientSettings.from_env()
     application.state.client_settings = settings
     application.state.http_client = create_client(settings)
     yield
     await application.state.http_client.aclose()
+    engine.dispose()
 
 
 app = FastAPI(
@@ -60,9 +63,9 @@ BATCH_TIMEOUT = 10.0
 NOT_FOUND: dict[int | str, dict[str, Any]] = {404: {"model": ErrorResponse, "description": "Запис не знайдено"}}
 
 
-def get_session() -> Iterator[Session]:
+def get_session(request: Request) -> Iterator[Session]:
     """Dependency: one database session per request, closed after the response."""
-    with SessionLocal() as session:
+    with request.app.state.session_factory() as session:
         yield session
 
 
