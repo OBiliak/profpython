@@ -145,7 +145,10 @@ class CarRepository:
             .join(Manufacturer, Car.manufacturer_id == Manufacturer.id)
             .order_by(Car.id)
         )
-        return [row.tuple() for row in self.session.execute(statement)]
+        return [
+            (car_id, brand, model, country, year)
+            for car_id, brand, model, country, year in self.session.execute(statement)
+        ]
 
     def update_price(self, car_id: int, price: float) -> Car | None:
         """Change the price of a car; None if it does not exist."""
