@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  quality-and-tests:
+    name: Lint, types and tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version:
+          - "3.11"
+          - "3.12"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev,test]"
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Format check
+        run: ruff format --check .
+
+      - name: Type check
+        run: mypy
+
+      - name: Tests with coverage
+        # fail_under = 80 in pyproject.toml: the job fails if coverage is lower
+        run: pytest -v --cov --cov-report=term-missing
+
+  build:
+    name: Build package
+    needs: quality-and-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build wheel and sdist
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build
+
+      - name: Check dist
+        run: ls -la dist
+
+      - name: Upload wheel and sdist
+        uses: actions/upload-artifact@v4
+        with:
+          name: car-catalog-dist
+          path: dist/
+
+  docker:
+    name: Docker build
+    needs: quality-and-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Docker build
+        run: docker build -t car-catalog:ci -t car-catalog:${{ github.sha }} .
+
+      - name: Smoke test of the container
+        run: |
+          docker run -d --name car-catalog -p 8000:8000 -e SEED_DEMO_DATA=true car-catalog:ci
+          for attempt in $(seq 1 30); do
+            if curl -fs http://127.0.0.1:8000/health; then break; fi
+            sleep 1
+          done
+          curl -fs http://127.0.0.1:8000/health
+          curl -fs "http://127.0.0.1:8000/cars?brand=BMW"
+          docker logs car-catalog
+          docker rm -f car-catalog
