@@ -138,6 +138,31 @@ class CarRepository:
             statement = statement.where(Car.mileage <= max_mileage)
         return list(self.session.scalars(statement.order_by(Car.price)))
 
+    def search(
+        self,
+        brand: str | None = None,
+        model: str | None = None,
+        min_year: int | None = None,
+        max_year: int | None = None,
+        order_by: str = "id",
+        descending: bool = False,
+        limit: int | None = None,
+        offset: int = 0,
+    ) -> list[Car]:
+        """Search by brand and part of the model, filter by years, sort and return one page."""
+        statement = select(Car).join(Car.manufacturer)
+        if brand is not None:
+            statement = statement.where(func.lower(Manufacturer.name) == brand.strip().lower())
+        if model is not None:
+            statement = statement.where(Car.model.icontains(model.strip()))
+        if min_year is not None:
+            statement = statement.where(Car.year >= min_year)
+        if max_year is not None:
+            statement = statement.where(Car.year <= max_year)
+        column = SORT_FIELDS[order_by]
+        statement = statement.order_by(column.desc() if descending else column, Car.id)
+        return list(self.session.scalars(statement.offset(offset).limit(limit)))
+
     def list_with_manufacturer(self) -> list[tuple[int, str, str, str, int]]:
         """JOIN cars and manufacturers: (id, brand, model, country, year) for every car."""
         statement = (
