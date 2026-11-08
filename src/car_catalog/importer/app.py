@@ -36,7 +36,9 @@ def show_formats(config: AppConfig) -> None:
     policy = ValidationPolicy.from_config(config.validation)
     source = config.output.path
     vehicles = [policy.parse(row, number) for number, row in select_importer(source).read(source)]
-    print(f"{source.as_posix()} -> {type(select_importer(source)).__name__}: {len(vehicles)} записів")
+    print(
+        f"{source.as_posix()} -> {type(select_importer(source)).__name__}: {len(vehicles)} записів"
+    )
     for name in ("vehicles.jsonl", "vehicles.json.gz"):
         path = source.with_name(name)
         written = export_records(vehicles, path)
@@ -63,7 +65,9 @@ def show_formats(config: AppConfig) -> None:
         statistics=statistics,
         errors=errors,
     ):
-        print(f"  {vehicle.vehicle_id}: {vehicle.brand} {vehicle.model}, {vehicle.year}, {vehicle.price:.0f} грн")
+        print(
+            f"  {vehicle.vehicle_id}: {vehicle.brand} {vehicle.model}, {vehicle.year}, {vehicle.price:.0f} грн"
+        )
     print(f"  valid={statistics.valid}, invalid={statistics.invalid}")
 
 

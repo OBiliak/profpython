@@ -56,9 +56,29 @@ def test_save_csv_writes_all_runs(tmp_path: Path) -> None:
     save_csv(results, path)
     with path.open(encoding="utf-8") as file:
         rows = list(csv.reader(file))
-    assert rows[0] == ["experiment", "method", "data_size", "workers", "run_1", "run_2",
-                       "mean", "median", "peak_memory_mb", "speedup"]
-    assert rows[1] == ["cpu", "Sequential", "10", "-", "2.000000", "2.000000",
-                       "2.000000", "2.000000", "1.50", "1.00"]
+    assert rows[0] == [
+        "experiment",
+        "method",
+        "data_size",
+        "workers",
+        "run_1",
+        "run_2",
+        "mean",
+        "median",
+        "peak_memory_mb",
+        "speedup",
+    ]
+    assert rows[1] == [
+        "cpu",
+        "Sequential",
+        "10",
+        "-",
+        "2.000000",
+        "2.000000",
+        "2.000000",
+        "2.000000",
+        "1.50",
+        "1.00",
+    ]
     assert rows[2][4:6] == ["1.000000", ""]
     assert rows[2][-2:] == ["", ""]

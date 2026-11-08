@@ -49,9 +49,7 @@ class CatalogSummary:
 class CatalogService:
     """Use cases of the car catalog; dependencies are passed to the constructor."""
 
-    def __init__(
-        self, reader: VehicleReader, writer: VehicleWriter, logger: EventLogger
-    ) -> None:
+    def __init__(self, reader: VehicleReader, writer: VehicleWriter, logger: EventLogger) -> None:
         self._reader = reader
         self._writer = writer
         self._logger = logger

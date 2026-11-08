@@ -41,7 +41,9 @@ def import_vehicles(
         if statistics.total and statistics.total % progress_every == 0:
             logger.info(
                 "Прогрес: оброблено %s, valid=%s, invalid=%s",
-                statistics.total, statistics.valid, statistics.invalid,
+                statistics.total,
+                statistics.valid,
+                statistics.invalid,
             )
         statistics.total += 1
         try:
@@ -71,7 +73,8 @@ def filter_by_price(
             statistics.filtered += 1
             logger.info(
                 "Відфільтровано ID %s: ціна %.0f грн поза діапазоном",
-                vehicle.vehicle_id, vehicle.price,
+                vehicle.vehicle_id,
+                vehicle.price,
             )
 
 
@@ -89,9 +92,7 @@ def build_summary(
     }
 
 
-def run_import(
-    config: AppConfig, statistics: ImportStatistics | None = None
-) -> ImportStatistics:
+def run_import(config: AppConfig, statistics: ImportStatistics | None = None) -> ImportStatistics:
     """Import, validate, filter and export vehicles according to the configuration."""
     if statistics is None:
         statistics = ImportStatistics()
@@ -117,7 +118,10 @@ def run_import(
         export_summary(build_summary(config, statistics, errors), config.output.summary_path)
     logger.info(
         "Total=%s, valid=%s, invalid=%s, filtered=%s, exported=%s",
-        statistics.total, statistics.valid, statistics.invalid,
-        statistics.filtered, statistics.exported,
+        statistics.total,
+        statistics.valid,
+        statistics.invalid,
+        statistics.filtered,
+        statistics.exported,
     )
     return statistics

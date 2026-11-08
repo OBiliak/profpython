@@ -8,7 +8,11 @@ from alembic.autogenerate import compare_metadata
 from alembic.runtime.migration import MigrationContext
 
 from car_catalog.persistence.database import create_database_engine
-from car_catalog.persistence.migrations import current_revision, downgrade_database, upgrade_database
+from car_catalog.persistence.migrations import (
+    current_revision,
+    downgrade_database,
+    upgrade_database,
+)
 from car_catalog.persistence.models import Base
 
 pytestmark = pytest.mark.integration
@@ -31,7 +35,15 @@ def test_upgrade_head_creates_tables_and_vin(tmp_path: Path) -> None:
 
     engine = create_database_engine(url)
     assert current_revision(engine) == "0002"
-    assert columns(path, "cars") == ["id", "model", "year", "price", "mileage", "manufacturer_id", "vin"]
+    assert columns(path, "cars") == [
+        "id",
+        "model",
+        "year",
+        "price",
+        "mileage",
+        "manufacturer_id",
+        "vin",
+    ]
     assert columns(path, "manufacturers") == ["id", "name", "country"]
     engine.dispose()
 
@@ -54,7 +66,9 @@ def test_vin_index_is_unique_after_migration(tmp_path: Path) -> None:
     upgrade_database(f"sqlite:///{path}")
     connection = sqlite3.connect(path)
     try:
-        connection.execute("INSERT INTO manufacturers (name, country) VALUES (?, ?)", ("Toyota", "Японія"))
+        connection.execute(
+            "INSERT INTO manufacturers (name, country) VALUES (?, ?)", ("Toyota", "Японія")
+        )
         insert = "INSERT INTO cars (model, year, price, mileage, manufacturer_id, vin) VALUES (?, ?, ?, ?, ?, ?)"
         connection.execute(insert, ("Corolla", 2018, 520_000, 85_000, 1, "JTDBR32E720000001"))
         with pytest.raises(sqlite3.IntegrityError, match="UNIQUE constraint failed: cars.vin"):

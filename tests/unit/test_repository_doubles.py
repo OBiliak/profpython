@@ -15,7 +15,10 @@ from car_catalog.domain.services import CatalogService
 
 def test_service_reads_vehicles_from_mock_repository(make_car: Callable[..., Car]) -> None:
     reader = Mock(spec=VehicleReader)
-    reader.all.return_value = [make_car(1, price=520_000), make_car(5, "BMW", "X5", price=1_890_000)]
+    reader.all.return_value = [
+        make_car(1, price=520_000),
+        make_car(5, "BMW", "X5", price=1_890_000),
+    ]
     service = CatalogService(reader, Mock(spec=VehicleWriter), Mock(spec=EventLogger))
 
     assert service.most_expensive().id == 5

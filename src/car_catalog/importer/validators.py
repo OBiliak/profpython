@@ -12,9 +12,7 @@ def read_field(row: dict[str, Any], field: str, line_number: int) -> str:
     value = row.get(field)
     text = "" if value is None else str(value).strip()
     if not text:
-        raise RecordValidationError(
-            f"Поле {field} порожнє", line_number=line_number, field=field
-        )
+        raise RecordValidationError(f"Поле {field} порожнє", line_number=line_number, field=field)
     return text
 
 

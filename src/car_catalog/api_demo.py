@@ -19,7 +19,11 @@ import uvicorn
 from car_catalog.api import app
 from car_catalog.external_api import ClientSettings, create_client, load_car_group
 from car_catalog.importer.logging_config import configure_console_logging
-from car_catalog.persistence.database import DATABASE_PATH, create_database_engine, create_session_factory
+from car_catalog.persistence.database import (
+    DATABASE_PATH,
+    create_database_engine,
+    create_session_factory,
+)
 from car_catalog.persistence.migrations import upgrade_database
 from car_catalog.persistence.seed import seed_catalog
 
@@ -74,7 +78,9 @@ def show(response: httpx.Response) -> Any:
     target = request.url.raw_path.decode()
     data = response.json() if response.content else None
     body = f"\n    {json.dumps(data, ensure_ascii=False)}" if data is not None else ""
-    print(f"{request.method} {httpx.URL(target)} → {response.status_code} {response.reason_phrase}{body}")
+    print(
+        f"{request.method} {httpx.URL(target)} → {response.status_code} {response.reason_phrase}{body}"
+    )
     return data
 
 
@@ -84,15 +90,25 @@ async def show_endpoints(client: httpx.AsyncClient) -> None:
     show(await client.get("/"))
     show(await client.get("/cars", params={"brand": "Toyota"}))
     show(await client.get("/cars", params={"model": "o", "min_year": 2016, "max_year": 2019}))
-    show(await client.get("/cars", params={"sort_by": "price", "descending": "true", "limit": 3, "offset": 0}))
+    show(
+        await client.get(
+            "/cars", params={"sort_by": "price", "descending": "true", "limit": 3, "offset": 0}
+        )
+    )
     show(await client.get("/cars/5"))
     show(await client.get("/cars/statistics"))
     show(await client.get("/manufacturers"))
     show(await client.get("/manufacturers/3/cars"))
 
     print("\n--- POST, PATCH, DELETE ---")
-    new_car = {"manufacturer_id": 1, "model": "Prius", "year": 2020, "price": 720000,
-               "mileage": 45000, "vin": "JTDKN3DU0A0000011"}
+    new_car = {
+        "manufacturer_id": 1,
+        "model": "Prius",
+        "year": 2020,
+        "price": 720000,
+        "mileage": 45000,
+        "vin": "JTDKN3DU0A0000011",
+    }
     print(f"JSON request: {json.dumps(new_car, ensure_ascii=False)}")
     created = show(await client.post("/cars", json=new_car))
     show(await client.patch(f"/cars/{created['id']}", json={"price": 705000, "mileage": 47500}))
@@ -114,8 +130,10 @@ async def show_concurrency(base_url: str) -> None:
     for limit in (1, 3):
         settings = ClientSettings(base_url=base_url, max_concurrency=limit)
         result = await load_car_group(GROUP, settings)
-        print(f"Semaphore({limit}): {len(GROUP)} tasks, завантажено {len(result.cars)}, помилок {len(result.errors)}, "
-              f"одночасно виконувалось не більше {result.max_concurrency}")
+        print(
+            f"Semaphore({limit}): {len(GROUP)} tasks, завантажено {len(result.cars)}, помилок {len(result.errors)}, "
+            f"одночасно виконувалось не більше {result.max_concurrency}"
+        )
     print("Моделі: " + ", ".join(f"{car['brand']} {car['model']}" for car in result.cars))
 
     async with create_client(settings) as client:
@@ -152,7 +170,9 @@ def main(argv: list[str] | None = None) -> int:
     except RuntimeError as error:
         print(f"Помилка: {error}")
         return 1
-    print(f"БД {DATABASE_PATH} створено міграціями; Uvicorn: {base_url} (Swagger UI: {base_url}/docs)")
+    print(
+        f"БД {DATABASE_PATH} створено міграціями; Uvicorn: {base_url} (Swagger UI: {base_url}/docs)"
+    )
     try:
         asyncio.run(run_client(base_url))
     finally:

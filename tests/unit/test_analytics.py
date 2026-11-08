@@ -33,9 +33,30 @@ class CarAnalyticsTest(unittest.TestCase):
     def setUp(self) -> None:
         """Prepare a small list of car records."""
         self.cars = [
-            {"id": 1, "brand": "Toyota", "model": "Corolla", "year": 2018, "price": 500000.0, "mileage": 80000},
-            {"id": 2, "brand": "BMW", "model": "X3", "year": 2021, "price": 1500000.0, "mileage": 30000},
-            {"id": 3, "brand": "Toyota", "model": "Yaris", "year": 2014, "price": 250000.0, "mileage": 120000},
+            {
+                "id": 1,
+                "brand": "Toyota",
+                "model": "Corolla",
+                "year": 2018,
+                "price": 500000.0,
+                "mileage": 80000,
+            },
+            {
+                "id": 2,
+                "brand": "BMW",
+                "model": "X3",
+                "year": 2021,
+                "price": 1500000.0,
+                "mileage": 30000,
+            },
+            {
+                "id": 3,
+                "brand": "Toyota",
+                "model": "Yaris",
+                "year": 2014,
+                "price": 250000.0,
+                "mileage": 120000,
+            },
         ]
 
     def test_gets_unique_brands(self) -> None:

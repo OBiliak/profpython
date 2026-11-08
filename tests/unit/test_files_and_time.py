@@ -94,8 +94,14 @@ def test_backup_is_not_created_for_new_file(tmp_path: Path) -> None:
 
 
 def test_import_logs_progress(policy: ValidationPolicy, caplog: pytest.LogCaptureFixture) -> None:
-    row = {"vehicle_id": "5", "brand": "BMW", "model": "X5", "year": "2020",
-           "price": "1890000", "mileage": "54000"}
+    row = {
+        "vehicle_id": "5",
+        "brand": "BMW",
+        "model": "X5",
+        "year": "2020",
+        "price": "1890000",
+        "mileage": "54000",
+    }
     rows = [(number, row) for number in range(1, 6)]
 
     with caplog.at_level("INFO"):

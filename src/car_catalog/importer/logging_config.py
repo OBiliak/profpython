@@ -22,13 +22,9 @@ def configure_logging(config: LoggingConfig) -> None:
     file_handler.setFormatter(logging.Formatter(LOG_FORMAT))
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(logging.Formatter(CONSOLE_FORMAT))
-    logging.basicConfig(
-        level=config.level, handlers=[file_handler, console_handler], force=True
-    )
+    logging.basicConfig(level=config.level, handlers=[file_handler, console_handler], force=True)
 
 
 def configure_console_logging() -> None:
     """Log to the console only (used before the configuration is loaded)."""
-    logging.basicConfig(
-        level=logging.INFO, format=CONSOLE_FORMAT, stream=sys.stdout, force=True
-    )
+    logging.basicConfig(level=logging.INFO, format=CONSOLE_FORMAT, stream=sys.stdout, force=True)

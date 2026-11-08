@@ -18,7 +18,7 @@ FIELDS = ("car_id", "brand", "model", "year", "price", "mileage")
 def split_batches(cars: list[CarRecord], parts: int) -> list[list[CarRecord]]:
     """Split the catalog into `parts` batches of almost equal size."""
     size = -(-len(cars) // parts)  # rounding up
-    return [cars[start:start + size] for start in range(0, len(cars), size)]
+    return [cars[start : start + size] for start in range(0, len(cars), size)]
 
 
 # --- CPU-bound: residual values ---
@@ -91,7 +91,9 @@ def write_catalog_parts(cars: list[CarRecord], directory: Path, parts: int = 8) 
             writer = csv.writer(file)
             writer.writerow(FIELDS)
             for car in batch:
-                writer.writerow((car.car_id, car.brand, car.model, car.year, car.price, car.mileage))
+                writer.writerow(
+                    (car.car_id, car.brand, car.model, car.year, car.price, car.mileage)
+                )
         paths.append(path)
     return paths
 
@@ -105,8 +107,12 @@ def parse_part(text: str) -> list[CarRecord]:
     """CPU stage: turn CSV text into CarRecord objects (pure Python, holds the GIL)."""
     return [
         CarRecord(
-            int(row["car_id"]), row["brand"], row["model"],
-            int(row["year"]), float(row["price"]), int(row["mileage"]),
+            int(row["car_id"]),
+            row["brand"],
+            row["model"],
+            int(row["year"]),
+            float(row["price"]),
+            int(row["mileage"]),
         )
         for row in csv.DictReader(io.StringIO(text))
     ]

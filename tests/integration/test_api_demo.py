@@ -32,7 +32,10 @@ def test_main_runs_api_scenario(
     assert "DELETE /cars/11 → 204 No Content" in output
     assert "POST /cars → 409 Conflict" in output
     assert "GET /cars/999 → 404 Not Found" in output
-    assert "Semaphore(3): 10 tasks, завантажено 10, помилок 0, одночасно виконувалось не більше 3" in output
+    assert (
+        "Semaphore(3): 10 tasks, завантажено 10, помилок 0, одночасно виконувалось не більше 3"
+        in output
+    )
     assert "Результат після 3 спроб" in output
     assert "TimeoutError" in output
 

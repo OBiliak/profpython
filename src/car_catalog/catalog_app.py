@@ -68,7 +68,9 @@ def main(argv: list[str] | None = None) -> int:
     args = sys.argv[1:] if argv is None else argv
     config_path = Path(args[0]) if args else Path("config.yaml")
     configure_console_logging()
-    print("=== Каталог автомобілів: сценарій, покритий тестами (лабораторна робота №6, варіант 5) ===")
+    print(
+        "=== Каталог автомобілів: сценарій, покритий тестами (лабораторна робота №6, варіант 5) ==="
+    )
     repository = InMemoryRepository[Vehicle]()
     service = CatalogService(repository, repository, MemoryLogger())
     try:
@@ -79,8 +81,10 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Помилка: {error}")
         return 1
     invalid_lines = ", ".join(str(invalid.line_number) for invalid in errors)
-    print(f"\nІмпорт {config.input.path.name}: усього {statistics.total}, valid {statistics.valid}, "
-          f"invalid {statistics.invalid} (рядки {invalid_lines})")
+    print(
+        f"\nІмпорт {config.input.path.name}: усього {statistics.total}, valid {statistics.valid}, "
+        f"invalid {statistics.invalid} (рядки {invalid_lines})"
+    )
 
     show_vehicles("Пошук за маркою «Toyota»", service.find_by_brand("Toyota"))
     show_vehicles("Пошук за моделлю «Model»", service.find_by_model("Model"))

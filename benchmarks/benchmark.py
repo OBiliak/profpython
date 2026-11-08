@@ -71,8 +71,15 @@ def numpy_statistics(arrays: vectorized.CatalogArrays) -> tuple[object, ...]:
 
 
 def run(
-    results: list[BenchmarkResult], experiment: str, method: str, size: int,
-    workers: int | None, repeats: int, memory: bool, function: Callable[..., Any], *args: Any,
+    results: list[BenchmarkResult],
+    experiment: str,
+    method: str,
+    size: int,
+    workers: int | None,
+    repeats: int,
+    memory: bool,
+    function: Callable[..., Any],
+    *args: Any,
 ) -> Any:
     """Measure one method, add the result to the list and print a line."""
     times, value = benchmark_repeated(function, *args, repeats=repeats)
@@ -84,55 +91,158 @@ def run(
     return value
 
 
-def residual_experiment(results: list[BenchmarkResult], cars: list[CarRecord], repeats: int, memory: bool) -> None:
+def residual_experiment(
+    results: list[BenchmarkResult], cars: list[CarRecord], repeats: int, memory: bool
+) -> None:
     """CPU-bound residual values; every optimized result is compared with the baseline."""
     size = len(cars)
-    expected = run(results, "residual", "Sequential", size, None, repeats, memory,
-                   analytics.residual_values_sequential, cars)
+    expected = run(
+        results,
+        "residual",
+        "Sequential",
+        size,
+        None,
+        repeats,
+        memory,
+        analytics.residual_values_sequential,
+        cars,
+    )
     for workers in WORKERS:
-        value = run(results, "residual", "Threads", size, workers, repeats, memory,
-                    residual_values_threads, cars, workers)
+        value = run(
+            results,
+            "residual",
+            "Threads",
+            size,
+            workers,
+            repeats,
+            memory,
+            residual_values_threads,
+            cars,
+            workers,
+        )
         assert value == expected
     for workers in WORKERS:
-        value = run(results, "residual", "Processes", size, workers, repeats, memory,
-                    residual_values_processes, cars, workers)
+        value = run(
+            results,
+            "residual",
+            "Processes",
+            size,
+            workers,
+            repeats,
+            memory,
+            residual_values_processes,
+            cars,
+            workers,
+        )
         assert value == expected
     arrays = vectorized.to_arrays(cars)
-    value = run(results, "residual", "NumPy", size, None, repeats, memory,
-                vectorized.residual_values, arrays)
+    value = run(
+        results,
+        "residual",
+        "NumPy",
+        size,
+        None,
+        repeats,
+        memory,
+        vectorized.residual_values,
+        arrays,
+    )
     assert np.allclose(value, expected, rtol=1e-9)
-    run(results, "residual", "NumPy + to_arrays", size, None, repeats, memory,
-        lambda: vectorized.residual_values(vectorized.to_arrays(cars)))
+    run(
+        results,
+        "residual",
+        "NumPy + to_arrays",
+        size,
+        None,
+        repeats,
+        memory,
+        lambda: vectorized.residual_values(vectorized.to_arrays(cars)),
+    )
 
 
-def analytics_experiment(results: list[BenchmarkResult], cars: list[CarRecord], repeats: int, memory: bool) -> None:
+def analytics_experiment(
+    results: list[BenchmarkResult], cars: list[CarRecord], repeats: int, memory: bool
+) -> None:
     """Statistics of the catalog: Python loops vs NumPy."""
     size = len(cars)
-    expected = run(results, "analytics", "Python loops", size, None, repeats, memory, python_statistics, cars)
+    expected = run(
+        results, "analytics", "Python loops", size, None, repeats, memory, python_statistics, cars
+    )
     arrays = vectorized.to_arrays(cars)
-    value = run(results, "analytics", "NumPy", size, None, repeats, memory, numpy_statistics, arrays)
+    value = run(
+        results, "analytics", "NumPy", size, None, repeats, memory, numpy_statistics, arrays
+    )
     assert value[:4] == expected[:4]
 
 
-def files_experiment(results: list[BenchmarkResult], cars: list[CarRecord], repeats: int, memory: bool) -> None:
+def files_experiment(
+    results: list[BenchmarkResult], cars: list[CarRecord], repeats: int, memory: bool
+) -> None:
     """I/O-bound: 8 compressed files; reading in threads and full loading with parsing."""
     size = len(cars)
     with tempfile.TemporaryDirectory() as directory:
         paths = write_catalog_parts(cars, Path(directory), parts=8)
-        expected = run(results, "files_read", "Sequential", size, None, repeats, memory,
-                       read_parts_sequential, paths)
+        expected = run(
+            results,
+            "files_read",
+            "Sequential",
+            size,
+            None,
+            repeats,
+            memory,
+            read_parts_sequential,
+            paths,
+        )
         for workers in (2, 4, 8):
-            value = run(results, "files_read", "ThreadPoolExecutor", size, workers, repeats, memory,
-                        read_parts_threads, paths, workers)
+            value = run(
+                results,
+                "files_read",
+                "ThreadPoolExecutor",
+                size,
+                workers,
+                repeats,
+                memory,
+                read_parts_threads,
+                paths,
+                workers,
+            )
             assert value == expected
-        value = run(results, "files_read", "threading.Thread", size, len(paths), repeats, memory,
-                    read_parts_with_threading, paths)
+        value = run(
+            results,
+            "files_read",
+            "threading.Thread",
+            size,
+            len(paths),
+            repeats,
+            memory,
+            read_parts_with_threading,
+            paths,
+        )
         assert value == expected
-        loaded = run(results, "files_load", "Sequential", size, None, repeats, memory,
-                     load_parts_sequential, paths)
+        loaded = run(
+            results,
+            "files_load",
+            "Sequential",
+            size,
+            None,
+            repeats,
+            memory,
+            load_parts_sequential,
+            paths,
+        )
         assert loaded == cars
-        loaded = run(results, "files_load", "ThreadPoolExecutor", size, 8, repeats, memory,
-                     load_parts_threads, paths, 8)
+        loaded = run(
+            results,
+            "files_load",
+            "ThreadPoolExecutor",
+            size,
+            8,
+            repeats,
+            memory,
+            load_parts_threads,
+            paths,
+            8,
+        )
         assert loaded == cars
 
 

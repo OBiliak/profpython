@@ -105,11 +105,15 @@ def test_pagination_returns_pages_without_overlap(seeded_session: Session) -> No
     pages = [repository.get_page(page, 4, "mileage") for page in (1, 2, 3)]
 
     assert [len(page) for page in pages] == [4, 4, 2]
-    assert [car.id for page in pages for car in page] == [car.id for car in repository.get_all("mileage")]
+    assert [car.id for page in pages for car in page] == [
+        car.id for car in repository.get_all("mileage")
+    ]
 
 
 @pytest.mark.parametrize(("page", "page_size"), [(0, 3), (1, 0)])
-def test_pagination_rejects_non_positive_values(seeded_session: Session, page: int, page_size: int) -> None:
+def test_pagination_rejects_non_positive_values(
+    seeded_session: Session, page: int, page_size: int
+) -> None:
     with pytest.raises(ValueError, match="додатними"):
         CarRepository(seeded_session).get_page(page, page_size)
 
@@ -225,7 +229,9 @@ def test_cars_without_vin_are_allowed(session: Session, make_db_car: MakeCar) ->
 
 
 def test_duplicate_manufacturer_name_is_rejected(seeded_session: Session) -> None:
-    with pytest.raises(DatabaseConstraintError, match="UNIQUE constraint failed: manufacturers.name"):
+    with pytest.raises(
+        DatabaseConstraintError, match="UNIQUE constraint failed: manufacturers.name"
+    ):
         ManufacturerRepository(seeded_session).add("Toyota", "Японія")
 
 
@@ -248,7 +254,9 @@ def test_check_constraints_reject_invalid_car(
 
 
 @pytest.mark.parametrize("year", [1950, 2026])
-def test_check_constraint_accepts_boundary_years(session: Session, make_db_car: MakeCar, year: int) -> None:
+def test_check_constraint_accepts_boundary_years(
+    session: Session, make_db_car: MakeCar, year: int
+) -> None:
     toyota = ManufacturerRepository(session).add("Toyota", "Японія")
 
     assert CarRepository(session).add(make_db_car(toyota.id, year=year)).year == year

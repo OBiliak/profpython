@@ -24,7 +24,9 @@ def test_find_cars_by_manufacturer(seeded_session: Session, database_path: Path)
     ["Toyota' OR '1'='1", "Toyota'; DROP TABLE cars; --"],
     ids=["or-true", "drop-table"],
 )
-def test_parameter_is_not_part_of_sql(seeded_session: Session, database_path: Path, malicious: str) -> None:
+def test_parameter_is_not_part_of_sql(
+    seeded_session: Session, database_path: Path, malicious: str
+) -> None:
     assert find_cars_by_manufacturer(str(database_path), malicious) == []
     assert len(find_cars_by_manufacturer(str(database_path), "Toyota")) == 3
 

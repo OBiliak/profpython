@@ -98,7 +98,9 @@ def update_prices_for_manufacturer(
             if car is None:
                 raise PriceUpdateError(f"Автомобіль з ID {car_id} не знайдено")
             if car.manufacturer_id != manufacturer.id:
-                raise PriceUpdateError(f"Автомобіль з ID {car_id} не належить виробнику {manufacturer.name}")
+                raise PriceUpdateError(
+                    f"Автомобіль з ID {car_id} не належить виробнику {manufacturer.name}"
+                )
             if price <= 0:
                 raise PriceUpdateError(f"Ціна для ID {car_id} має бути більшою за нуль: {price}")
             car.price = price

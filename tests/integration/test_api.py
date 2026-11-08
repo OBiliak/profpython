@@ -43,8 +43,14 @@ def test_list_cars_returns_all_cars(api_client: TestClient) -> None:
     assert response.status_code == 200
     assert ids(response) == list(range(1, 11))
     assert response.json()[0] == {
-        "id": 1, "brand": "Toyota", "model": "Corolla", "year": 2018, "price": 520000.0,
-        "mileage": 85000, "vin": "JTDBR32E720000001", "manufacturer_id": 1,
+        "id": 1,
+        "brand": "Toyota",
+        "model": "Corolla",
+        "year": 2018,
+        "price": 520000.0,
+        "mileage": 85000,
+        "vin": "JTDBR32E720000001",
+        "manufacturer_id": 1,
     }
 
 
@@ -72,8 +78,14 @@ def test_list_cars_with_query_parameters(
 
 @pytest.mark.parametrize(
     "params",
-    [{"limit": 0}, {"limit": 101}, {"offset": -1}, {"min_year": 1949}, {"sort_by": "brand"},
-     {"min_year": 2022, "max_year": 2019}],
+    [
+        {"limit": 0},
+        {"limit": 101},
+        {"offset": -1},
+        {"min_year": 1949},
+        {"sort_by": "brand"},
+        {"min_year": 2022, "max_year": 2019},
+    ],
     ids=["limit-0", "limit-101", "offset", "min-year", "sort-field", "reversed-years"],
 )
 def test_list_cars_rejects_invalid_query(api_client: TestClient, params: dict[str, object]) -> None:
@@ -119,7 +131,12 @@ def test_statistics_of_empty_catalog(api_client: TestClient) -> None:
 
     data = api_client.get("/cars/statistics").json()
 
-    assert data == {"count": 0, "average_price": 0.0, "most_expensive": None, "lowest_mileage": None}
+    assert data == {
+        "count": 0,
+        "average_price": 0.0,
+        "most_expensive": None,
+        "lowest_mileage": None,
+    }
 
 
 # --- POST /cars ---
@@ -155,8 +172,17 @@ def test_create_car_with_duplicate_vin_is_409(api_client: TestClient) -> None:
 
 @pytest.mark.parametrize(
     ("field", "value"),
-    [("year", 1949), ("year", 2027), ("price", 0), ("price", -1), ("mileage", -1), ("model", ""),
-     ("vin", "JTDKN3DU0A000001"), ("vin", "JTDKN3DU0A00000I1"), ("manufacturer_id", 0)],
+    [
+        ("year", 1949),
+        ("year", 2027),
+        ("price", 0),
+        ("price", -1),
+        ("mileage", -1),
+        ("model", ""),
+        ("vin", "JTDKN3DU0A000001"),
+        ("vin", "JTDKN3DU0A00000I1"),
+        ("manufacturer_id", 0),
+    ],
 )
 def test_create_car_validation(api_client: TestClient, field: str, value: object) -> None:
     response = api_client.post("/cars", json={**NEW_CAR, field: value})
@@ -175,7 +201,9 @@ def test_create_car_without_required_field(api_client: TestClient) -> None:
 
 
 def test_create_car_boundary_values(api_client: TestClient) -> None:
-    response = api_client.post("/cars", json={**NEW_CAR, "year": 1950, "price": 0.01, "mileage": 0, "vin": None})
+    response = api_client.post(
+        "/cars", json={**NEW_CAR, "year": 1950, "price": 0.01, "mileage": 0, "vin": None}
+    )
 
     assert response.status_code == 201
 
@@ -185,8 +213,11 @@ def test_create_car_boundary_values(api_client: TestClient) -> None:
 
 @pytest.mark.parametrize(
     ("body", "expected"),
-    [({"price": 505000}, (505000.0, 85000)), ({"mileage": 90000}, (520000.0, 90000)),
-     ({"price": 499000, "mileage": 91000}, (499000.0, 91000))],
+    [
+        ({"price": 505000}, (505000.0, 85000)),
+        ({"mileage": 90000}, (520000.0, 90000)),
+        ({"price": 499000, "mileage": 91000}, (499000.0, 91000)),
+    ],
     ids=["price", "mileage", "both"],
 )
 def test_update_price_and_mileage(
@@ -196,10 +227,16 @@ def test_update_price_and_mileage(
 
     assert response.status_code == 200
     data = api_client.get("/cars/1").json()
-    assert (data["price"], data["mileage"]) == expected == (response.json()["price"], response.json()["mileage"])
+    assert (
+        (data["price"], data["mileage"])
+        == expected
+        == (response.json()["price"], response.json()["mileage"])
+    )
 
 
-@pytest.mark.parametrize("body", [{}, {"price": -5}, {"mileage": -1}], ids=["empty", "price", "mileage"])
+@pytest.mark.parametrize(
+    "body", [{}, {"price": -5}, {"mileage": -1}], ids=["empty", "price", "mileage"]
+)
 def test_update_validation(api_client: TestClient, body: dict[str, object]) -> None:
     assert api_client.patch("/cars/1", json=body).status_code == 422
     assert api_client.get("/cars/1").json()["price"] == 520000.0
@@ -266,7 +303,12 @@ def test_openapi_describes_variant_endpoints(api_client: TestClient) -> None:
     schema = api_client.get("/openapi.json").json()
 
     assert schema["info"]["title"] == "Car Catalog API"
-    assert {"/cars", "/cars/{car_id}", "/manufacturers/{manufacturer_id}/cars", "/cars/batch"} <= set(schema["paths"])
+    assert {
+        "/cars",
+        "/cars/{car_id}",
+        "/manufacturers/{manufacturer_id}/cars",
+        "/cars/batch",
+    } <= set(schema["paths"])
     assert set(schema["paths"]["/cars/{car_id}"]) == {"get", "patch", "delete"}
 
 
@@ -285,11 +327,16 @@ def test_batch_timeout_returns_504(api_client: TestClient, monkeypatch: pytest.M
         await asyncio.sleep(1)
         return httpx.Response(200, json={})
 
-    slow_client = httpx.AsyncClient(transport=httpx.MockTransport(slow_handler), base_url="http://test")
+    slow_client = httpx.AsyncClient(
+        transport=httpx.MockTransport(slow_handler), base_url="http://test"
+    )
     monkeypatch.setattr(api, "BATCH_TIMEOUT", 0.05)
     app.dependency_overrides[get_http_client] = lambda: slow_client
 
     response = api_client.post("/cars/batch", json={"car_ids": [1, 2]})
 
     assert response.status_code == 504
-    assert response.json() == {"error": "timeout", "detail": "Пакетне завантаження не завершилося вчасно"}
+    assert response.json() == {
+        "error": "timeout",
+        "detail": "Пакетне завантаження не завершилося вчасно",
+    }

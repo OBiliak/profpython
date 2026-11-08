@@ -39,7 +39,9 @@ def measure(function: Callable[..., Any], *args: Any) -> tuple[float, Any]:
     return perf_counter() - start, result
 
 
-def benchmark_repeated(function: Callable[..., Any], *args: Any, repeats: int = 5) -> tuple[list[float], Any]:
+def benchmark_repeated(
+    function: Callable[..., Any], *args: Any, repeats: int = 5
+) -> tuple[list[float], Any]:
     """Run the function `repeats` times; return all times and the last result."""
     times = []
     result = None
@@ -57,7 +59,9 @@ def calculate_speedup(baseline: float, optimized: float) -> float:
 def add_speedups(results: list[BenchmarkResult], baseline_method: str) -> None:
     """Speedup of every result against the baseline method of the same experiment and data size."""
     baselines = {
-        (item.experiment, item.data_size): item.mean for item in results if item.method == baseline_method
+        (item.experiment, item.data_size): item.mean
+        for item in results
+        if item.method == baseline_method
     }
     for item in results:
         base = baselines.get((item.experiment, item.data_size))
@@ -80,7 +84,10 @@ def save_csv(results: list[BenchmarkResult], path: Path) -> None:
                 [item.experiment, item.method, item.data_size, item.workers or "-"]
                 + [f"{value:.6f}" for value in item.times]
                 + [""] * (runs - len(item.times))
-                + [f"{item.mean:.6f}", f"{item.median:.6f}",
-                   "" if item.peak_memory_mb is None else f"{item.peak_memory_mb:.2f}",
-                   "" if item.speedup is None else f"{item.speedup:.2f}"]
+                + [
+                    f"{item.mean:.6f}",
+                    f"{item.median:.6f}",
+                    "" if item.peak_memory_mb is None else f"{item.peak_memory_mb:.2f}",
+                    "" if item.speedup is None else f"{item.speedup:.2f}",
+                ]
             )

@@ -66,7 +66,9 @@ def measure_memory(function: Callable[..., Any], *args: Any) -> tuple[Any, float
     return result, current / MB, peak / MB
 
 
-def time_with_timeit(function: Callable[..., Any], *args: Any, number: int = 5, repeat: int = 3) -> float:
+def time_with_timeit(
+    function: Callable[..., Any], *args: Any, number: int = 5, repeat: int = 3
+) -> float:
     """The best average time of one call: min over `repeat` series of `number` calls (timeit)."""
     timer = timeit.Timer(lambda: function(*args))
     return min(timer.repeat(repeat=repeat, number=number)) / number

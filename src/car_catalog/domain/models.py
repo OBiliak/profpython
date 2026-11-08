@@ -63,8 +63,7 @@ class Vehicle(ABC):
     def describe(self) -> str:
         """Return a short description of the vehicle."""
         return (
-            f"{self.kind()} {self.brand} {self.model}, {self.year} р., "
-            f"{self.price}, {self.mileage}"
+            f"{self.kind()} {self.brand} {self.model}, {self.year} р., {self.price}, {self.mileage}"
         )
 
     def __repr__(self) -> str:

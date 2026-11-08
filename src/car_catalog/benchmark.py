@@ -56,12 +56,16 @@ def print_table(rows: list[tuple[int, float, float, float, float]]) -> None:
     print("Пошук останнього ID і перевірка відсутньої моделі, час одного виклику, мкс")
     print(f"(найкращий з {REPEATS} повторів по {SEARCHES} викликів)")
     print()
-    print(f"{'Records':>8} | {'list search':>11} | {'dict search':>11} | "
-          f"{'list/dict':>9} | {'x in list':>9} | {'x in set':>8}")
+    print(
+        f"{'Records':>8} | {'list search':>11} | {'dict search':>11} | "
+        f"{'list/dict':>9} | {'x in list':>9} | {'x in set':>8}"
+    )
     print("-" * 72)
     for size, list_time, dict_time, list_in_time, set_in_time in rows:
-        print(f"{size:>8} | {list_time:>11.3f} | {dict_time:>11.3f} | "
-              f"{list_time / dict_time:>8.0f}x | {list_in_time:>9.3f} | {set_in_time:>8.3f}")
+        print(
+            f"{size:>8} | {list_time:>11.3f} | {dict_time:>11.3f} | "
+            f"{list_time / dict_time:>8.0f}x | {list_in_time:>9.3f} | {set_in_time:>8.3f}"
+        )
 
 
 def main() -> None:

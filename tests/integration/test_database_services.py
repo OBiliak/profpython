@@ -79,7 +79,9 @@ def test_year_filter_rejects_reversed_range(seeded_session: Session) -> None:
 
 
 def test_bulk_price_update_commits_all_prices(seeded_session: Session) -> None:
-    count = update_prices_for_manufacturer(seeded_session, "Toyota", {1: 505_000, 2: 1_120_000, 8: 955_000})
+    count = update_prices_for_manufacturer(
+        seeded_session, "Toyota", {1: 505_000, 2: 1_120_000, 8: 955_000}
+    )
 
     seeded_session.expire_all()
     assert count == 3
@@ -114,7 +116,9 @@ def test_bulk_price_update_of_unknown_manufacturer(seeded_session: Session) -> N
         update_prices_for_manufacturer(seeded_session, "Tesla", {1: 1.0})
 
 
-def test_rollback_is_visible_from_another_connection(seeded_session: Session, database_path: Path) -> None:
+def test_rollback_is_visible_from_another_connection(
+    seeded_session: Session, database_path: Path
+) -> None:
     """After rollback another connection to the same file sees the old price (Atomicity + Durability)."""
     with pytest.raises(PriceUpdateError):
         update_prices_for_manufacturer(seeded_session, "Volkswagen", {3: 365_000, 9: -1})

@@ -27,7 +27,9 @@ def cars() -> list[CarRecord]:
     return generate_cars(3_000)
 
 
-@pytest.mark.parametrize(("count", "parts", "sizes"), [(10, 3, [4, 4, 2]), (8, 4, [2, 2, 2, 2]), (2, 5, [1, 1])])
+@pytest.mark.parametrize(
+    ("count", "parts", "sizes"), [(10, 3, [4, 4, 2]), (8, 4, [2, 2, 2, 2]), (2, 5, [1, 1])]
+)
 def test_split_batches_keeps_all_cars(count: int, parts: int, sizes: list[int]) -> None:
     cars = generate_cars(count)
     batches = split_batches(cars, parts)

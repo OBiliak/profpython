@@ -179,9 +179,7 @@ class TestCatalogService(unittest.TestCase):
         self.container = ServiceContainer(self.logger)
         self.service = self.container.catalog_service()
         self.service.add_vehicle(make_car(1, "Toyota", 2018))
-        self.service.add_vehicle(
-            Car(2, "BMW", "X5", 2020, Money(1_900_000), Mileage(50_000))
-        )
+        self.service.add_vehicle(Car(2, "BMW", "X5", 2020, Money(1_900_000), Mileage(50_000)))
         self.service.add_vehicle(
             ElectricCar(3, "Tesla", "Model 3", 2022, Money(1_400_000), Mileage(20_000), 75, 510)
         )
@@ -224,9 +222,15 @@ class TestPayloadAndStatistics(unittest.TestCase):
 
     def test_payload_round_trip(self) -> None:
         payload: VehiclePayload = {
-            "id": 9, "kind": "electric", "brand": "Nissan", "model": "Leaf",
-            "year": 2019, "price": 560_000.0, "mileage": 41_000,
-            "battery_kwh": 40.0, "range_km": 270,
+            "id": 9,
+            "kind": "electric",
+            "brand": "Nissan",
+            "model": "Leaf",
+            "year": 2019,
+            "price": 560_000.0,
+            "mileage": 41_000,
+            "battery_kwh": 40.0,
+            "range_km": 270,
         }
         vehicle = vehicle_from_payload(payload)
         self.assertIsInstance(vehicle, ElectricCar)
@@ -234,8 +238,13 @@ class TestPayloadAndStatistics(unittest.TestCase):
 
     def test_invalid_payload_raises(self) -> None:
         payload: VehiclePayload = {
-            "id": 1, "kind": "electric", "brand": "Renault", "model": "Zoe",
-            "year": 2020, "price": 430_000.0, "mileage": 52_000,
+            "id": 1,
+            "kind": "electric",
+            "brand": "Renault",
+            "model": "Zoe",
+            "year": 2020,
+            "price": 430_000.0,
+            "mileage": 52_000,
         }
         with self.assertRaises(InvalidVehicleError):
             vehicle_from_payload(payload)

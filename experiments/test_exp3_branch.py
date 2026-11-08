@@ -1,7 +1,6 @@
 """Experiment 3: branch coverage of classify_price."""
 
 import pytest
-
 from price_segments import classify_price
 
 

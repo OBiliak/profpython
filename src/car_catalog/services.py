@@ -17,9 +17,7 @@ def find_cars_by_brand(cars: list[Car], brand: str) -> list[Car]:
     return [car for car in cars if car.brand.lower() == brand.strip().lower()]
 
 
-def filter_cars_by_year(
-    cars: list[Car], min_year: int, max_year: int | None = None
-) -> list[Car]:
+def filter_cars_by_year(cars: list[Car], min_year: int, max_year: int | None = None) -> list[Car]:
     """Return cars made in the year range from min_year to max_year."""
     result = []
     for car in cars:

@@ -230,7 +230,12 @@ def make_db_car() -> Callable[..., CarRecord]:
         vin: str | None = None,
     ) -> CarRecord:
         return CarRecord(
-            model=model, year=year, price=price, mileage=mileage, vin=vin, manufacturer_id=manufacturer_id
+            model=model,
+            year=year,
+            price=price,
+            mileage=mileage,
+            vin=vin,
+            manufacturer_id=manufacturer_id,
         )
 
     return factory

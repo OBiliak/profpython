@@ -29,9 +29,7 @@ def find_car_linear(cars: list[dict], car_id: int) -> dict | None:
 
 
 @log_operation("фільтр за роком")
-def filter_by_year(
-    cars: list[dict], min_year: int, max_year: int | None = None
-) -> list[dict]:
+def filter_by_year(cars: list[dict], min_year: int, max_year: int | None = None) -> list[dict]:
     """Return cars made from min_year to max_year inclusive."""
     return [
         car

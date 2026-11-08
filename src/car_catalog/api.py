@@ -6,15 +6,19 @@ from collections.abc import AsyncIterator, Iterator
 from contextlib import asynccontextmanager
 from typing import Annotated, Any, Literal
 
+import httpx
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Query, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-import httpx
 from sqlalchemy.orm import Session
 
 from car_catalog import __version__
 from car_catalog.external_api import ClientSettings, create_client, fetch_cars
-from car_catalog.persistence.database import create_database_engine, create_session_factory, database_url
+from car_catalog.persistence.database import (
+    create_database_engine,
+    create_session_factory,
+    database_url,
+)
 from car_catalog.persistence.exceptions import DatabaseConstraintError
 from car_catalog.persistence.models import MAX_YEAR, MIN_YEAR, Car, Manufacturer
 from car_catalog.persistence.repositories import CarRepository, ManufacturerRepository
@@ -60,7 +64,9 @@ app = FastAPI(
 )
 
 BATCH_TIMEOUT = 10.0
-NOT_FOUND: dict[int | str, dict[str, Any]] = {404: {"model": ErrorResponse, "description": "Запис не знайдено"}}
+NOT_FOUND: dict[int | str, dict[str, Any]] = {
+    404: {"model": ErrorResponse, "description": "Запис не знайдено"}
+}
 
 
 def get_session(request: Request) -> Iterator[Session]:
@@ -94,11 +100,15 @@ async def validation_error_handler(request: Request, error: RequestValidationErr
         f"{'.'.join(str(part) for part in item['loc'])}: {item['msg']}" for item in error.errors()
     ]
     body = ErrorResponse(error="validation_error", detail="; ".join(messages))
-    return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, content=body.model_dump())
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, content=body.model_dump()
+    )
 
 
 @app.exception_handler(DatabaseConstraintError)
-async def constraint_error_handler(request: Request, error: DatabaseConstraintError) -> JSONResponse:
+async def constraint_error_handler(
+    request: Request, error: DatabaseConstraintError
+) -> JSONResponse:
     """UNIQUE / CHECK / FOREIGN KEY violation in the database → 409 Conflict."""
     body = ErrorResponse(error="conflict", detail=str(error))
     return JSONResponse(status_code=status.HTTP_409_CONFLICT, content=body.model_dump())
@@ -108,7 +118,9 @@ def find_car(session: Session, car_id: int) -> Car:
     """Return a car or raise 404."""
     car = CarRepository(session).get_by_id(car_id)
     if car is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Автомобіль з ID {car_id} не знайдено")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Автомобіль з ID {car_id} не знайдено"
+        )
     return car
 
 
@@ -126,7 +138,9 @@ async def root() -> dict[str, str]:
 @app.get("/cars", response_model=list[CarRead], tags=["cars"])
 def list_cars(
     session: SessionDep,
-    brand: Annotated[str | None, Query(description="Марка (виробник), без урахування регістру")] = None,
+    brand: Annotated[
+        str | None, Query(description="Марка (виробник), без урахування регістру")
+    ] = None,
     model: Annotated[str | None, Query(description="Частина назви моделі")] = None,
     min_year: Annotated[int | None, Query(ge=MIN_YEAR, le=MAX_YEAR)] = None,
     max_year: Annotated[int | None, Query(ge=MIN_YEAR, le=MAX_YEAR)] = None,
@@ -138,7 +152,9 @@ def list_cars(
     """Search by brand/model, filter by year, sorting and pagination."""
     if min_year is not None and max_year is not None and min_year > max_year:
         raise HTTPException(status_code=422, detail="min_year не може бути більшим за max_year")
-    return CarRepository(session).search(brand, model, min_year, max_year, sort_by, descending, limit, offset)
+    return CarRepository(session).search(
+        brand, model, min_year, max_year, sort_by, descending, limit, offset
+    )
 
 
 @app.get("/cars/statistics", response_model=CatalogStatistics, tags=["cars"])
@@ -171,7 +187,9 @@ def get_car(car_id: int, session: SessionDep) -> Car:
 def create_car(data: CarCreate, session: SessionDep, background_tasks: BackgroundTasks) -> Car:
     """Add a car; the manufacturer must exist, the VIN must be unique."""
     if ManufacturerRepository(session).get_by_id(data.manufacturer_id) is None:
-        raise HTTPException(status_code=404, detail=f"Виробника з ID {data.manufacturer_id} не знайдено")
+        raise HTTPException(
+            status_code=404, detail=f"Виробника з ID {data.manufacturer_id} не знайдено"
+        )
     car = CarRepository(session).add(Car(**data.model_dump()))
     background_tasks.add_task(log_new_car, car.id, car.describe())
     return car
@@ -183,13 +201,19 @@ def create_car(data: CarCreate, session: SessionDep, background_tasks: Backgroun
     responses={504: {"model": ErrorResponse, "description": "Операція не завершилася вчасно"}},
     tags=["cars"],
 )
-async def load_cars_batch(data: BatchRequest, request: Request, client: HttpClientDep) -> BatchResult:
+async def load_cars_batch(
+    data: BatchRequest, request: Request, client: HttpClientDep
+) -> BatchResult:
     """Load a group of cars concurrently through GET /cars/{id} (HTTPX, Task, gather, Semaphore, retry)."""
     settings: ClientSettings = request.app.state.client_settings
     try:
-        result = await asyncio.wait_for(fetch_cars(client, data.car_ids, settings), timeout=BATCH_TIMEOUT)
+        result = await asyncio.wait_for(
+            fetch_cars(client, data.car_ids, settings), timeout=BATCH_TIMEOUT
+        )
     except TimeoutError as error:
-        raise HTTPException(status_code=504, detail="Пакетне завантаження не завершилося вчасно") from error
+        raise HTTPException(
+            status_code=504, detail="Пакетне завантаження не завершилося вчасно"
+        ) from error
     return BatchResult(
         cars=[CarRead(**car) for car in result.cars],
         errors=[BatchError(car_id=car_id, error=text) for car_id, text in result.errors],
@@ -209,7 +233,9 @@ def update_car(car_id: int, data: CarUpdate, session: SessionDep) -> Car:
     return car
 
 
-@app.delete("/cars/{car_id}", status_code=status.HTTP_204_NO_CONTENT, responses=NOT_FOUND, tags=["cars"])
+@app.delete(
+    "/cars/{car_id}", status_code=status.HTTP_204_NO_CONTENT, responses=NOT_FOUND, tags=["cars"]
+)
 def delete_car(car_id: int, session: SessionDep) -> None:
     """Delete a car."""
     find_car(session, car_id)

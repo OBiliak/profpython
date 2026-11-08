@@ -31,8 +31,14 @@ HEADER = "vehicle_id,brand,model,year,price,mileage\n"
 
 def make_row(**changes: str) -> dict[str, str]:
     """Return a valid raw row with optional changed fields."""
-    row = {"vehicle_id": "1", "brand": "Toyota", "model": "Corolla",
-           "year": "2018", "price": "520000", "mileage": "85000"}
+    row = {
+        "vehicle_id": "1",
+        "brand": "Toyota",
+        "model": "Corolla",
+        "year": "2018",
+        "price": "520000",
+        "mileage": "85000",
+    }
     row.update(changes)
     return row
 
@@ -77,8 +83,11 @@ class TestImportService(unittest.TestCase):
 
     def setUp(self) -> None:
         self.policy = ValidationPolicy(1950, 2026)
-        self.rows = [(2, make_row()), (3, make_row(vehicle_id="abc")),
-                     (4, make_row(vehicle_id="3", price="4200000"))]
+        self.rows = [
+            (2, make_row()),
+            (3, make_row(vehicle_id="abc")),
+            (4, make_row(vehicle_id="3", price="4200000")),
+        ]
         logging.disable(logging.CRITICAL)
 
     def tearDown(self) -> None:
@@ -86,22 +95,35 @@ class TestImportService(unittest.TestCase):
 
     def test_tolerant_mode_skips_invalid_records(self) -> None:
         statistics, errors = ImportStatistics(), []
-        vehicles = list(import_vehicles(self.rows, policy=self.policy, skip_invalid=True,
-                                        statistics=statistics, errors=errors))
+        vehicles = list(
+            import_vehicles(
+                self.rows,
+                policy=self.policy,
+                skip_invalid=True,
+                statistics=statistics,
+                errors=errors,
+            )
+        )
         self.assertEqual([vehicle.vehicle_id for vehicle in vehicles], [1, 3])
         self.assertEqual((statistics.total, statistics.valid, statistics.invalid), (3, 2, 1))
         self.assertEqual(errors[0].line_number, 3)
 
     def test_strict_mode_stops_on_first_invalid_record(self) -> None:
-        vehicles = import_vehicles(self.rows, policy=self.policy, skip_invalid=False,
-                                   statistics=ImportStatistics(), errors=[])
+        vehicles = import_vehicles(
+            self.rows,
+            policy=self.policy,
+            skip_invalid=False,
+            statistics=ImportStatistics(),
+            errors=[],
+        )
         with self.assertRaises(RecordValidationError):
             list(vehicles)
 
     def test_filters_by_price_range(self) -> None:
         statistics = ImportStatistics()
-        vehicles = import_vehicles(self.rows, policy=self.policy, skip_invalid=True,
-                                   statistics=statistics, errors=[])
+        vehicles = import_vehicles(
+            self.rows, policy=self.policy, skip_invalid=True, statistics=statistics, errors=[]
+        )
         selected = list(filter_by_price(vehicles, 0, 2_000_000, statistics))
         self.assertEqual(len(selected), 1)
         self.assertEqual(statistics.filtered, 1)
@@ -113,8 +135,10 @@ class TestFiles(unittest.TestCase):
     def setUp(self) -> None:
         self.temp = tempfile.TemporaryDirectory()
         self.root = Path(self.temp.name)
-        self.vehicles = [VehicleRecord(1, "Toyota", "Corolla", 2018, 520000.0, 85000),
-                         VehicleRecord(2, "Škoda", "Octavia", 2019, 610000.0, 67000)]
+        self.vehicles = [
+            VehicleRecord(1, "Toyota", "Corolla", 2018, 520000.0, 85000),
+            VehicleRecord(2, "Škoda", "Octavia", 2019, 610000.0, 67000),
+        ]
         logging.disable(logging.CRITICAL)
 
     def tearDown(self) -> None:
@@ -154,7 +178,9 @@ class TestFiles(unittest.TestCase):
 
     def test_reads_yaml_list(self) -> None:
         path = self.root / "cars.yaml"
-        path.write_text(yaml.safe_dump([vehicle.to_dict() for vehicle in self.vehicles]), encoding="utf-8")
+        path.write_text(
+            yaml.safe_dump([vehicle.to_dict() for vehicle in self.vehicles]), encoding="utf-8"
+        )
         self.assertEqual(len(list(select_importer(path).read(path))), 2)
 
     def test_atomic_writer_keeps_previous_output_on_error(self) -> None:
@@ -208,8 +234,13 @@ class TestFiles(unittest.TestCase):
             retry(locked, attempts=2, delay=0)
 
     def test_custom_encoder_serializes_path_datetime_and_dataclass(self) -> None:
-        text = to_json({"path": Path("data/cars.csv"), "at": datetime(2026, 11, 6, 12, 0),
-                        "car": self.vehicles[0]})
+        text = to_json(
+            {
+                "path": Path("data/cars.csv"),
+                "at": datetime(2026, 11, 6, 12, 0),
+                "car": self.vehicles[0],
+            }
+        )
         data = json.loads(text)
         self.assertEqual(data["path"], "data/cars.csv")
         self.assertEqual(data["at"], "2026-11-06T12:00:00")
@@ -236,8 +267,12 @@ class TestConfiguration(unittest.TestCase):
         self.raw: dict[str, object] = {
             "schema_version": 1,
             "input": {"path": "cars.csv"},
-            "output": {"path": "out/cars.json", "errors_path": "out/invalid.csv",
-                       "summary_path": "out/summary.json", "backup": True},
+            "output": {
+                "path": "out/cars.json",
+                "errors_path": "out/invalid.csv",
+                "summary_path": "out/summary.json",
+                "backup": True,
+            },
             "validation": {"years": {"min": 1950, "max": 2026}},
             "filter": {"price": {"min": 0, "max": 2000000}},
             "processing": {"skip_invalid": True, "progress_every": 5},

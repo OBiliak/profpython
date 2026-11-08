@@ -129,14 +129,44 @@ def show_payloads(service: CatalogService) -> None:
     """Show TypedDict payloads and the factory of domain objects."""
     print("\n--- TypedDict payload -> domain object ---")
     payloads: list[VehiclePayload] = [
-        {"id": 8, "kind": "car", "brand": "Renault", "model": "Logan",
-         "year": 2012, "price": 210_000, "mileage": 198_000},
-        {"id": 9, "kind": "electric", "brand": "Hyundai", "model": "Kona Electric",
-         "year": 2021, "price": 890_000, "mileage": 36_000, "battery_kwh": 64, "range_km": 450},
-        {"id": 10, "kind": "electric", "brand": "Renault", "model": "Zoe",
-         "year": 2020, "price": 430_000, "mileage": 52_000},
-        {"id": 11, "kind": "truck", "brand": "MAN", "model": "TGX",
-         "year": 2016, "price": 1_300_000, "mileage": 610_000},
+        {
+            "id": 8,
+            "kind": "car",
+            "brand": "Renault",
+            "model": "Logan",
+            "year": 2012,
+            "price": 210_000,
+            "mileage": 198_000,
+        },
+        {
+            "id": 9,
+            "kind": "electric",
+            "brand": "Hyundai",
+            "model": "Kona Electric",
+            "year": 2021,
+            "price": 890_000,
+            "mileage": 36_000,
+            "battery_kwh": 64,
+            "range_km": 450,
+        },
+        {
+            "id": 10,
+            "kind": "electric",
+            "brand": "Renault",
+            "model": "Zoe",
+            "year": 2020,
+            "price": 430_000,
+            "mileage": 52_000,
+        },
+        {
+            "id": 11,
+            "kind": "truck",
+            "brand": "MAN",
+            "model": "TGX",
+            "year": 2016,
+            "price": 1_300_000,
+            "mileage": 610_000,
+        },
     ]
     for payload in payloads:
         try:

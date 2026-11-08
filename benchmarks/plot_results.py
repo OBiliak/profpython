@@ -53,8 +53,14 @@ def plot_time(rows: list[dict[str, str]], size: int, path: Path) -> None:
     figure, axis = plt.subplots(figsize=(8, 5))
     bars = axis.barh(names, times, height=0.6, color=BLUE)
     for bar, value in zip(bars, times):
-        axis.text(bar.get_width() + max(times) * 0.01, bar.get_y() + bar.get_height() / 2,
-                  f"{value:.2f} с", va="center", color=TEXT, fontsize=9)
+        axis.text(
+            bar.get_width() + max(times) * 0.01,
+            bar.get_y() + bar.get_height() / 2,
+            f"{value:.2f} с",
+            va="center",
+            color=TEXT,
+            fontsize=9,
+        )
     style(axis, f"Залишкова вартість, {number(size)} авто: середній час (5 повторів)", "час, с", "")
     axis.grid(axis="y", visible=False)
     axis.set_xlim(0, max(times) * 1.15)
@@ -68,20 +74,56 @@ def plot_speedup(rows: list[dict[str, str]], size: int, path: Path) -> None:
     figure, axis = plt.subplots(figsize=(8, 5))
     axis.axhline(1, color=GRID, linewidth=1.5, zorder=1)
     workers: list[int] = []
-    for method, name, color in (("Processes", "ProcessPoolExecutor", ORANGE),
-                                ("Threads", "ThreadPoolExecutor", BLUE)):
-        selected = [r for r in rows if r["experiment"] == "residual" and r["method"] == method
-                    and int(r["data_size"]) == size]
+    for method, name, color in (
+        ("Processes", "ProcessPoolExecutor", ORANGE),
+        ("Threads", "ThreadPoolExecutor", BLUE),
+    ):
+        selected = [
+            r
+            for r in rows
+            if r["experiment"] == "residual"
+            and r["method"] == method
+            and int(r["data_size"]) == size
+        ]
         workers = [int(r["workers"]) for r in selected]
         speedups = [float(r["speedup"]) for r in selected]
-        axis.plot(workers, speedups, color=color, linewidth=2, marker="o", markersize=7,
-                  markeredgecolor="white", markeredgewidth=2, label=name, zorder=3)
-        axis.annotate(f"{speedups[-1]:.2f}×", (workers[-1], speedups[-1]), xytext=(8, 0),
-                      textcoords="offset points", va="center", color=TEXT, fontsize=9)
-    axis.plot(workers, workers, color=MUTED, linewidth=1, linestyle="--", label="ідеальне (= workers)", zorder=2)
+        axis.plot(
+            workers,
+            speedups,
+            color=color,
+            linewidth=2,
+            marker="o",
+            markersize=7,
+            markeredgecolor="white",
+            markeredgewidth=2,
+            label=name,
+            zorder=3,
+        )
+        axis.annotate(
+            f"{speedups[-1]:.2f}×",
+            (workers[-1], speedups[-1]),
+            xytext=(8, 0),
+            textcoords="offset points",
+            va="center",
+            color=TEXT,
+            fontsize=9,
+        )
+    axis.plot(
+        workers,
+        workers,
+        color=MUTED,
+        linewidth=1,
+        linestyle="--",
+        label="ідеальне (= workers)",
+        zorder=2,
+    )
     axis.set_xticks(workers)
-    style(axis, f"Прискорення відносно Sequential, {number(size)} авто",
-          "кількість workers", "speedup, ×")
+    style(
+        axis,
+        f"Прискорення відносно Sequential, {number(size)} авто",
+        "кількість workers",
+        "speedup, ×",
+    )
     axis.legend(frameon=False, labelcolor=TEXT)
     figure.tight_layout()
     figure.savefig(path, dpi=150)
@@ -91,25 +133,48 @@ def plot_speedup(rows: list[dict[str, str]], size: int, path: Path) -> None:
 def plot_sizes(rows: list[dict[str, str]], path: Path) -> None:
     """Time against data size for the main methods (log scales)."""
     figure, axis = plt.subplots(figsize=(8, 5))
-    series = [("Sequential", "-", BLUE), ("Threads", "8", ORANGE),
-              ("Processes", "8", AQUA), ("NumPy", "-", YELLOW)]
+    series = [
+        ("Sequential", "-", BLUE),
+        ("Threads", "8", ORANGE),
+        ("Processes", "8", AQUA),
+        ("NumPy", "-", YELLOW),
+    ]
     sequential: list[float] = []
     for method, workers, color in series:
-        selected = [r for r in rows if r["experiment"] == "residual" and r["method"] == method
-                    and r["workers"] == workers]
+        selected = [
+            r
+            for r in rows
+            if r["experiment"] == "residual" and r["method"] == method and r["workers"] == workers
+        ]
         sizes = [int(r["data_size"]) for r in selected]
         times = [float(r["mean"]) for r in selected]
         if method == "Sequential":
             sequential = times
         name = method if workers == "-" else f"{method} ({workers})"
-        axis.plot(sizes, times, color=color, linewidth=2, marker="o", markersize=7,
-                  markeredgecolor="white", markeredgewidth=2, label=name)
+        axis.plot(
+            sizes,
+            times,
+            color=color,
+            linewidth=2,
+            marker="o",
+            markersize=7,
+            markeredgecolor="white",
+            markeredgewidth=2,
+            label=name,
+        )
     axis.set_xscale("log")
     axis.set_yscale("log")
     axis.set_xticks(sizes, [number(size) for size in sizes])
     axis.minorticks_off()
-    axis.annotate("Threads (8) ≈ Sequential: лінії збігаються (GIL)", (sizes[1], sequential[1]), xytext=(0, 14),
-                  textcoords="offset points", ha="center", color=TEXT, fontsize=9)
+    axis.annotate(
+        "Threads (8) ≈ Sequential: лінії збігаються (GIL)",
+        (sizes[1], sequential[1]),
+        xytext=(0, 14),
+        textcoords="offset points",
+        ha="center",
+        color=TEXT,
+        fontsize=9,
+    )
     style(axis, "Залишкова вартість: час від розміру даних", "кількість автомобілів", "час, с")
     axis.legend(frameon=False, labelcolor=TEXT)
     figure.tight_layout()

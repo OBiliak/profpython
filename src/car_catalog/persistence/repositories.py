@@ -43,7 +43,9 @@ class ManufacturerRepository:
 
     def get_by_name(self, name: str) -> Manufacturer | None:
         """Return a manufacturer by name (case-insensitive) or None."""
-        statement = select(Manufacturer).where(func.lower(Manufacturer.name) == name.strip().lower())
+        statement = select(Manufacturer).where(
+            func.lower(Manufacturer.name) == name.strip().lower()
+        )
         return self.session.scalar(statement)
 
     def get_all(self) -> list[Manufacturer]:
@@ -98,7 +100,9 @@ class CarRepository:
         statement = statement.offset(offset).limit(limit)
         return list(self.session.scalars(statement))
 
-    def get_page(self, page: int, page_size: int, order_by: str = "id", descending: bool = False) -> list[Car]:
+    def get_page(
+        self, page: int, page_size: int, order_by: str = "id", descending: bool = False
+    ) -> list[Car]:
         """Return page number `page` (from 1) of size `page_size`."""
         if page < 1 or page_size < 1:
             raise ValueError("page і page_size мають бути додатними")
@@ -116,7 +120,9 @@ class CarRepository:
 
     def filter_by_year(self, min_year: int, max_year: int) -> list[Car]:
         """Return cars with min_year <= year <= max_year."""
-        statement = select(Car).where(Car.year.between(min_year, max_year)).order_by(Car.year, Car.id)
+        statement = (
+            select(Car).where(Car.year.between(min_year, max_year)).order_by(Car.year, Car.id)
+        )
         return list(self.session.scalars(statement))
 
     def find(

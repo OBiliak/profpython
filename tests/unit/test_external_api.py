@@ -199,14 +199,26 @@ def test_settings_from_environment(monkeypatch: pytest.MonkeyPatch) -> None:
 
     settings = ClientSettings.from_env()
 
-    assert (settings.base_url, settings.timeout, settings.retry_attempts, settings.max_concurrency) == (
-        "http://127.0.0.1:9000", 2.5, 5, 4,
+    assert (
+        settings.base_url,
+        settings.timeout,
+        settings.retry_attempts,
+        settings.max_concurrency,
+    ) == (
+        "http://127.0.0.1:9000",
+        2.5,
+        5,
+        4,
     )
 
 
 def test_settings_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
-    for name in ("CAR_CATALOG_API_URL", "CAR_CATALOG_HTTP_TIMEOUT", "CAR_CATALOG_RETRY_ATTEMPTS",
-                 "CAR_CATALOG_MAX_CONCURRENCY"):
+    for name in (
+        "CAR_CATALOG_API_URL",
+        "CAR_CATALOG_HTTP_TIMEOUT",
+        "CAR_CATALOG_RETRY_ATTEMPTS",
+        "CAR_CATALOG_MAX_CONCURRENCY",
+    ):
         monkeypatch.delenv(name, raising=False)
 
     assert ClientSettings.from_env() == ClientSettings()
@@ -225,8 +237,16 @@ REQUEST = httpx.Request("GET", "http://test/cars/1")
 @pytest.mark.parametrize(
     ("error", "retryable", "text"),
     [
-        (httpx.HTTPStatusError("e", request=REQUEST, response=httpx.Response(503)), True, "HTTP 503"),
-        (httpx.HTTPStatusError("e", request=REQUEST, response=httpx.Response(404)), False, "HTTP 404"),
+        (
+            httpx.HTTPStatusError("e", request=REQUEST, response=httpx.Response(503)),
+            True,
+            "HTTP 503",
+        ),
+        (
+            httpx.HTTPStatusError("e", request=REQUEST, response=httpx.Response(404)),
+            False,
+            "HTTP 404",
+        ),
         (httpx.ConnectError("refused", request=REQUEST), True, "ConnectError: refused"),
         (httpx.ConnectTimeout("", request=REQUEST), True, "ConnectTimeout"),
     ],

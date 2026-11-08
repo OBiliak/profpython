@@ -84,9 +84,7 @@ class VehicleInfoService:
         try:
             info = self._provider.fetch(vehicle.brand, vehicle.model)
         except (LookupError, ConnectionError, TimeoutError) as error:
-            raise VehicleInfoError(
-                f"Не вдалося отримати довідку для ID {vehicle.id}"
-            ) from error
+            raise VehicleInfoError(f"Не вдалося отримати довідку для ID {vehicle.id}") from error
         self._logger.log(f"довідка для ID {vehicle.id}: {info.country}")
         return info
 
@@ -112,7 +110,5 @@ class AsyncVehicleInfoService:
         try:
             data = await self._client.fetch_info(vehicle.brand, vehicle.model)
         except (LookupError, ConnectionError, TimeoutError) as error:
-            raise VehicleInfoError(
-                f"Не вдалося отримати довідку для ID {vehicle.id}"
-            ) from error
+            raise VehicleInfoError(f"Не вдалося отримати довідку для ID {vehicle.id}") from error
         return data["country"]

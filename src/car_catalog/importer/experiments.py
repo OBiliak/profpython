@@ -11,12 +11,12 @@ from pathlib import Path
 
 import yaml
 
+from car_catalog.importer.app import main
 from car_catalog.importer.config import load_config
 from car_catalog.importer.exceptions import ApplicationError, RecordValidationError
 from car_catalog.importer.readers import FIELDS
 from car_catalog.importer.services import ImportStatistics, run_import
 from car_catalog.importer.validators import ValidationPolicy
-from car_catalog.importer.app import main
 
 WORK_DIR = Path("data/generated/experiments")
 BRANDS = ("Toyota", "Skoda", "BMW", "Volkswagen", "Hyundai", "Renault", "Kia")
@@ -34,7 +34,9 @@ def write_vehicles_csv(path: Path, valid: int, invalid: int = 0) -> None:
         for number in range(1, total + 1):
             price = -1 if number % step == 0 else 150_000 + number * 37 % 1_500_000
             brand = BRANDS[number % len(BRANDS)]
-            writer.writerow([number, brand, "Model", 1995 + number % 31, price, number * 13 % 300_000])
+            writer.writerow(
+                [number, brand, "Model", 1995 + number % 31, price, number * 13 % 300_000]
+            )
 
 
 def base_config(input_name: str, output_name: str, skip_invalid: bool) -> dict[str, object]:
@@ -69,7 +71,9 @@ def experiment_strict_tolerant() -> None:
     results: dict[str, tuple[ImportStatistics, str, bool]] = {}
     for mode, skip_invalid in (("Strict", False), ("Tolerant", True)):
         output = f"out/{mode.lower()}.json"
-        config_path = write_config(f"{mode.lower()}.yaml", base_config("strict_tolerant.csv", output, skip_invalid))
+        config_path = write_config(
+            f"{mode.lower()}.yaml", base_config("strict_tolerant.csv", output, skip_invalid)
+        )
         statistics = ImportStatistics()
         try:
             run_import(load_config(config_path, {}), statistics)
@@ -126,8 +130,12 @@ def measure(action: Callable[[Path], int], path: Path) -> tuple[float, float, in
 
 def experiment_streaming_eager() -> None:
     """Experiment 2: execution time and peak memory of eager and streaming import."""
-    print("\n=== Експеримент 2. Streaming vs eager (час без tracemalloc, peak RAM з tracemalloc) ===")
-    print(f"{'Records':>8} | {'Eager time':>11} | {'Streaming time':>14} | {'Eager peak RAM':>14} | {'Streaming peak RAM':>18}")
+    print(
+        "\n=== Експеримент 2. Streaming vs eager (час без tracemalloc, peak RAM з tracemalloc) ==="
+    )
+    print(
+        f"{'Records':>8} | {'Eager time':>11} | {'Streaming time':>14} | {'Eager peak RAM':>14} | {'Streaming peak RAM':>18}"
+    )
     for size in SIZES:
         path = WORK_DIR / f"vehicles_{size}.csv"
         write_vehicles_csv(path, size)
@@ -151,7 +159,9 @@ def describe_chain(error: BaseException) -> list[str]:
     for exception in reversed(chain):
         lines.append("Traceback (most recent call last):")
         for frame in traceback.extract_tb(exception.__traceback__):
-            lines.append(f'  File "{Path(frame.filename).name}", line {frame.lineno}, in {frame.name}')
+            lines.append(
+                f'  File "{Path(frame.filename).name}", line {frame.lineno}, in {frame.name}'
+            )
         lines.append(f"{type(exception).__module__}.{type(exception).__name__}: {exception}")
         if exception is not error:
             lines.append("\nThe above exception was the direct cause of the following exception:\n")
@@ -161,8 +171,14 @@ def describe_chain(error: BaseException) -> list[str]:
 def experiment_chaining() -> None:
     """Experiment 3: ValueError -> RecordValidationError with the original cause."""
     print("\n=== Експеримент 3. Exception chaining ===")
-    row = {"vehicle_id": "1", "brand": "Toyota", "model": "Corolla", "year": "wrong",
-           "price": "520000", "mileage": "85000"}
+    row = {
+        "vehicle_id": "1",
+        "brand": "Toyota",
+        "model": "Corolla",
+        "year": "wrong",
+        "price": "520000",
+        "mileage": "85000",
+    }
     print("CSV: vehicle_id,brand,model,year,price,mileage")
     print("     1,Toyota,Corolla,wrong,520000,85000")
     try:
@@ -180,8 +196,12 @@ def experiment_atomic_output() -> None:
     write_vehicles_csv(WORK_DIR / "atomic_valid.csv", 50)
     write_vehicles_csv(WORK_DIR / "atomic_broken.csv", 40, 1)
     output = WORK_DIR / "out" / "atomic.json"
-    good = write_config("atomic_good.yaml", base_config("atomic_valid.csv", "out/atomic.json", True))
-    broken = write_config("atomic_broken.yaml", base_config("atomic_broken.csv", "out/atomic.json", False))
+    good = write_config(
+        "atomic_good.yaml", base_config("atomic_valid.csv", "out/atomic.json", True)
+    )
+    broken = write_config(
+        "atomic_broken.yaml", base_config("atomic_broken.csv", "out/atomic.json", False)
+    )
     run_import(load_config(good, {}))
     before = output.read_bytes()
     print(f"1) Попередній valid output: {output.as_posix()}, {len(before)} байт, 50 записів")
@@ -229,17 +249,27 @@ def experiment_config_errors() -> None:
     show_config_error("4. years.min = 2030 > max = 2026", write_config("years.yaml", years))
     missing_input = good | {"input": {"path": "no_such_file.csv"}}
     show_config_error("5. Input file відсутній", write_config("missing_input.yaml", missing_input))
-    show_config_error("6. schema_version = 2", write_config("schema.yaml", good | {"schema_version": 2}))
+    show_config_error(
+        "6. schema_version = 2", write_config("schema.yaml", good | {"schema_version": 2})
+    )
     good_path = write_config("good.yaml", good)
-    show_config_error("7. CAR_IMPORT_SKIP_INVALID=maybe", good_path, {"CAR_IMPORT_SKIP_INVALID": "maybe"})
+    show_config_error(
+        "7. CAR_IMPORT_SKIP_INVALID=maybe", good_path, {"CAR_IMPORT_SKIP_INVALID": "maybe"}
+    )
     print("8. Output directory не існує:")
-    new_output = good | {"output": {"path": "new_dir/sub/vehicles.json",
-                                    "errors_path": "new_dir/invalid.csv",
-                                    "summary_path": "new_dir/summary.json"}}
+    new_output = good | {
+        "output": {
+            "path": "new_dir/sub/vehicles.json",
+            "errors_path": "new_dir/invalid.csv",
+            "summary_path": "new_dir/summary.json",
+        }
+    }
     target = WORK_DIR / "new_dir" / "sub"
     print(f"   до запуску {target.as_posix()} існує: {target.exists()}")
     statistics = run_import(load_config(write_config("new_dir.yaml", new_output), {}))
-    print(f"   після запуску існує: {target.exists()}, exported={statistics.exported} (каталог створено автоматично)")
+    print(
+        f"   після запуску існує: {target.exists()}, exported={statistics.exported} (каталог створено автоматично)"
+    )
 
 
 def run_experiments() -> None:

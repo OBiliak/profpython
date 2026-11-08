@@ -48,14 +48,20 @@ def show_baseline(cars: list[CarRecord]) -> None:
     cheapest_mileage = report["lowest_mileage"]
     assert isinstance(expensive, CarRecord) and isinstance(cheapest_mileage, CarRecord)
     print(f"Toyota: {report['toyota']} авто; роки 2019–2022: {report['years_2019_2022']} авто")
-    print(f"Найдорожчий: {expensive.brand} {expensive.model} (ID {expensive.car_id}), {expensive.price:.2f} грн")
-    print(f"Мінімальний пробіг: {cheapest_mileage.brand} {cheapest_mileage.model} "
-          f"(ID {cheapest_mileage.car_id}), {cheapest_mileage.mileage} км")
+    print(
+        f"Найдорожчий: {expensive.brand} {expensive.model} (ID {expensive.car_id}), {expensive.price:.2f} грн"
+    )
+    print(
+        f"Мінімальний пробіг: {cheapest_mileage.brand} {cheapest_mileage.model} "
+        f"(ID {cheapest_mileage.car_id}), {cheapest_mileage.mileage} км"
+    )
     print(f"Середня ціна: {report['average_price']:.2f} грн")
     mileage = report["mileage"]
     assert isinstance(mileage, analytics.MileageStatistics)
-    print(f"Пробіг: min {mileage.minimum}, max {mileage.maximum}, середній {mileage.average:.1f}, "
-          f"std {mileage.std:.1f}")
+    print(
+        f"Пробіг: min {mileage.minimum}, max {mileage.maximum}, середній {mileage.average:.1f}, "
+        f"std {mileage.std:.1f}"
+    )
     manufacturers = report["manufacturers"]
     assert isinstance(manufacturers, dict)
     print("Виробники (кількість / середня ціна):")
@@ -73,24 +79,34 @@ def show_profile(cars: list[CarRecord]) -> None:
     for row in report.functions[:8]:
         print(f"{row.ncalls:>8} {row.tottime:9.3f} {row.cumtime:9.3f}  {row.name}")
     residual = report.find("residual_value")
-    print(f"Усього під cProfile: {report.total_time:.3f} с; residual_values_sequential — "
-          f"{report.share('residual_values_sequential'):.1%} часу")
-    print(f"Bottleneck: residual_value() — {residual.ncalls} викликів, tottime {residual.tottime:.3f} с "
-          "(CPU-bound: 120 кроків обчислень на авто)")
+    print(
+        f"Усього під cProfile: {report.total_time:.3f} с; residual_values_sequential — "
+        f"{report.share('residual_values_sequential'):.1%} часу"
+    )
+    print(
+        f"Bottleneck: residual_value() — {residual.ncalls} викликів, tottime {residual.tottime:.3f} с "
+        "(CPU-bound: 120 кроків обчислень на авто)"
+    )
     after = profile_call(vectorized.catalog_report, vectorized.to_arrays(cars), limit=5)
-    print(f"Після оптимізації (vectorized.catalog_report, NumPy): {after.total_time:.3f} с під cProfile; "
-          f"residual_values — {after.share('residual_values'):.1%} часу, "
-          f"{after.find('residual_values').ncalls} виклик")
+    print(
+        f"Після оптимізації (vectorized.catalog_report, NumPy): {after.total_time:.3f} с під cProfile; "
+        f"residual_values — {after.share('residual_values'):.1%} часу, "
+        f"{after.find('residual_values').ncalls} виклик"
+    )
 
     title("3. tracemalloc і timeit")
     _, current, peak = measure_memory(generate_cars, len(cars))
     arrays, _, arrays_peak = measure_memory(vectorized.to_arrays, cars)
     print(f"list[CarRecord] з {len(cars)} авто: поточна {current:.2f} MB, пік {peak:.2f} MB")
-    print(f"Масиви NumPy (5 стовпців): {arrays.nbytes / 1024 / 1024:.2f} MB, пік перетворення {arrays_peak:.2f} MB")
+    print(
+        f"Масиви NumPy (5 стовпців): {arrays.nbytes / 1024 / 1024:.2f} MB, пік перетворення {arrays_peak:.2f} MB"
+    )
     python_time = time_with_timeit(analytics.average_price, cars)
     numpy_time = time_with_timeit(vectorized.average_price, arrays)
-    print(f"timeit average_price: цикл {python_time * 1000:.3f} мс, NumPy {numpy_time * 1000:.3f} мс "
-          f"(у {calculate_speedup(python_time, numpy_time):.1f} раза швидше)")
+    print(
+        f"timeit average_price: цикл {python_time * 1000:.3f} мс, NumPy {numpy_time * 1000:.3f} мс "
+        f"(у {calculate_speedup(python_time, numpy_time):.1f} раза швидше)"
+    )
 
 
 def show_cpu_bound(cars: list[CarRecord]) -> None:
@@ -99,19 +115,27 @@ def show_cpu_bound(cars: list[CarRecord]) -> None:
     base_time, expected = measure(analytics.residual_values_sequential, cars)
     print(f"Sequential:                {base_time:7.3f} с")
     threads_time, threads_result = measure(residual_values_threads, cars, WORKERS)
-    print(f"ThreadPoolExecutor ({WORKERS}):    {threads_time:7.3f} с  speedup "
-          f"{calculate_speedup(base_time, threads_time):.2f}  однакові: {threads_result == expected}")
+    print(
+        f"ThreadPoolExecutor ({WORKERS}):    {threads_time:7.3f} с  speedup "
+        f"{calculate_speedup(base_time, threads_time):.2f}  однакові: {threads_result == expected}"
+    )
     processes_time, processes_result = measure(residual_values_processes, cars, WORKERS)
-    print(f"ProcessPoolExecutor ({WORKERS}):   {processes_time:7.3f} с  speedup "
-          f"{calculate_speedup(base_time, processes_time):.2f}  однакові: {processes_result == expected}")
+    print(
+        f"ProcessPoolExecutor ({WORKERS}):   {processes_time:7.3f} с  speedup "
+        f"{calculate_speedup(base_time, processes_time):.2f}  однакові: {processes_result == expected}"
+    )
     arrays = vectorized.to_arrays(cars)
     numpy_time, numpy_result = measure(vectorized.residual_values, arrays)
-    print(f"NumPy:                     {numpy_time:7.3f} с  speedup "
-          f"{calculate_speedup(base_time, numpy_time):.2f}  "
-          f"однакові (rtol 1e-9): {np.allclose(numpy_result, expected, rtol=1e-9)}")
+    print(
+        f"NumPy:                     {numpy_time:7.3f} с  speedup "
+        f"{calculate_speedup(base_time, numpy_time):.2f}  "
+        f"однакові (rtol 1e-9): {np.allclose(numpy_result, expected, rtol=1e-9)}"
+    )
     process_sum = residual_sum_with_processes(cars, WORKERS)
-    print(f"multiprocessing.Process ×{WORKERS} (сума через Queue): {process_sum:.2f}, "
-          f"sequential: {sum(expected):.2f}")
+    print(
+        f"multiprocessing.Process ×{WORKERS} (сума через Queue): {process_sum:.2f}, "
+        f"sequential: {sum(expected):.2f}"
+    )
 
 
 def show_files(cars: list[CarRecord]) -> None:
@@ -124,14 +148,18 @@ def show_files(cars: list[CarRecord]) -> None:
         base_time, texts = measure(read_parts_sequential, paths)
         threads_time, threads_texts = measure(read_parts_threads, paths, 8)
         manual_time, manual_texts = measure(read_parts_with_threading, paths)
-        print(f"Читання + розпакування: послідовно {base_time:.4f} с; ThreadPoolExecutor (8) "
-              f"{threads_time:.4f} с; threading.Thread ×8 {manual_time:.4f} с; "
-              f"однакові: {texts == threads_texts == manual_texts}")
+        print(
+            f"Читання + розпакування: послідовно {base_time:.4f} с; ThreadPoolExecutor (8) "
+            f"{threads_time:.4f} с; threading.Thread ×8 {manual_time:.4f} с; "
+            f"однакові: {texts == threads_texts == manual_texts}"
+        )
         load_time, loaded = measure(load_parts_sequential, paths)
         load_threads_time, loaded_threads = measure(load_parts_threads, paths, 8)
-        print(f"Повне завантаження з розбором CSV: послідовно {load_time:.3f} с; "
-              f"ThreadPoolExecutor (8) {load_threads_time:.3f} с; авто: {len(loaded)}, "
-              f"однакові: {loaded == loaded_threads == cars}")
+        print(
+            f"Повне завантаження з розбором CSV: послідовно {load_time:.3f} с; "
+            f"ThreadPoolExecutor (8) {load_threads_time:.3f} с; авто: {len(loaded)}, "
+            f"однакові: {loaded == loaded_threads == cars}"
+        )
 
 
 def show_race_condition(cars: list[CarRecord]) -> None:
@@ -156,15 +184,21 @@ def show_cache(cars: list[CarRecord]) -> None:
     catalog = CachedCarCatalog(cars)
     cold_time, cold = measure(catalog.brand_statistics, "Toyota")
     warm_time, warm = measure(catalog.brand_statistics, "toyota")
-    print(f"Toyota: {cold.count} авто, середня ціна {cold.average_price:.2f}, max {cold.max_price:.2f}")
-    print(f"Перший виклик (miss): {cold_time * 1000:.3f} мс; повторний (hit): {warm_time * 1000:.4f} мс; "
-          f"той самий об'єкт: {warm is cold}")
+    print(
+        f"Toyota: {cold.count} авто, середня ціна {cold.average_price:.2f}, max {cold.max_price:.2f}"
+    )
+    print(
+        f"Перший виклик (miss): {cold_time * 1000:.3f} мс; повторний (hit): {warm_time * 1000:.4f} мс; "
+        f"той самий об'єкт: {warm is cold}"
+    )
     print(f"cache_info: hits/misses/size = {brand_cache_info()}")
     toyota = next(car for car in catalog.cars if car.brand == "Toyota")
     catalog.update_price(toyota.car_id, 5_000_000.0)
     changed = catalog.brand_statistics("Toyota")
-    print(f"update_price(ID {toyota.car_id}, 5000000) → version {catalog.version}; "
-          f"max {changed.max_price:.2f}, середня {changed.average_price:.2f}")
+    print(
+        f"update_price(ID {toyota.car_id}, 5000000) → version {catalog.version}; "
+        f"max {changed.max_price:.2f}, середня {changed.average_price:.2f}"
+    )
     print(f"cache_info після зміни: {brand_cache_info()} (новий ключ — новий miss)")
     clear_caches()
     print(f"cache_clear(): {brand_cache_info()}")

@@ -25,7 +25,9 @@ def test_arrays_have_compact_dtypes(arrays: vectorized.CatalogArrays) -> None:
 
 
 @pytest.mark.parametrize("brand", ["Toyota", "BMW", "Tesla"])
-def test_count_by_brand(cars: list[CarRecord], arrays: vectorized.CatalogArrays, brand: str) -> None:
+def test_count_by_brand(
+    cars: list[CarRecord], arrays: vectorized.CatalogArrays, brand: str
+) -> None:
     assert vectorized.count_by_brand(arrays, brand) == len(analytics.find_by_brand(cars, brand))
 
 
@@ -67,7 +69,9 @@ def test_missing_brand_is_not_in_statistics() -> None:
     assert list(vectorized.manufacturer_statistics(arrays)) == ["BMW"]
 
 
-def test_residual_values_match_python_loop(cars: list[CarRecord], arrays: vectorized.CatalogArrays) -> None:
+def test_residual_values_match_python_loop(
+    cars: list[CarRecord], arrays: vectorized.CatalogArrays
+) -> None:
     expected = analytics.residual_values_sequential(cars)
     assert vectorized.residual_values(arrays) == pytest.approx(expected, rel=1e-9)
 
@@ -78,7 +82,9 @@ def test_residual_value_is_never_negative() -> None:
     assert vectorized.residual_values(vectorized.to_arrays([car]))[0] == 0.0
 
 
-def test_catalog_reports_are_the_same(cars: list[CarRecord], arrays: vectorized.CatalogArrays) -> None:
+def test_catalog_reports_are_the_same(
+    cars: list[CarRecord], arrays: vectorized.CatalogArrays
+) -> None:
     expected = analytics.catalog_report(cars)
     result = vectorized.catalog_report(arrays)
     assert result["toyota"] == expected["toyota"]

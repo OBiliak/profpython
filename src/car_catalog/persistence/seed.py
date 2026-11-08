@@ -33,7 +33,8 @@ def seed_catalog(session: Session) -> int:
     manufacturer_repository = ManufacturerRepository(session)
     car_repository = CarRepository(session)
     manufacturer_ids = {
-        name: manufacturer_repository.add(name, country).id for name, country in MANUFACTURERS.items()
+        name: manufacturer_repository.add(name, country).id
+        for name, country in MANUFACTURERS.items()
     }
     for item in demo_cars:
         car_repository.add(

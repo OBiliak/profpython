@@ -9,8 +9,15 @@ from car_catalog.main import main
 def test_main_prints_all_parts(capsys: pytest.CaptureFixture[str]) -> None:
     assert main(["3000"]) == 0
     output = capsys.readouterr().out
-    for heading in ("1. Baseline", "2. cProfile", "3. tracemalloc", "4. CPU-bound",
-                    "5. I/O-bound", "6. Race condition", "7. Caching"):
+    for heading in (
+        "1. Baseline",
+        "2. cProfile",
+        "3. tracemalloc",
+        "4. CPU-bound",
+        "5. I/O-bound",
+        "6. Race condition",
+        "7. Caching",
+    ):
         assert heading in output
     assert "Згенеровано 3000 автомобілів" in output
     assert "Bottleneck: residual_value() — 3000 викликів" in output

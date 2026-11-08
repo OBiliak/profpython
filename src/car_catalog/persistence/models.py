@@ -62,10 +62,7 @@ class Car(Base):
 
     def describe(self) -> str:
         """Return a short text description of the car."""
-        return (
-            f"{self.brand} {self.model}, {self.year} р., "
-            f"{self.price:.2f} грн, {self.mileage} км"
-        )
+        return f"{self.brand} {self.model}, {self.year} р., {self.price:.2f} грн, {self.mileage} км"
 
     def __repr__(self) -> str:
         return f"Car(id={self.id}, model={self.model!r}, year={self.year})"

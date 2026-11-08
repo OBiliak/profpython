@@ -37,9 +37,7 @@ def test_rejects_year_outside_range(make_car: Callable[..., Car], year: int) -> 
     [("", "Corolla"), ("Toyota", "   ")],
     ids=["empty-brand", "blank-model"],
 )
-def test_rejects_empty_brand_or_model(
-    make_car: Callable[..., Car], brand: str, model: str
-) -> None:
+def test_rejects_empty_brand_or_model(make_car: Callable[..., Car], brand: str, model: str) -> None:
     with pytest.raises(InvalidVehicleError, match="не можуть бути порожніми"):
         make_car(brand=brand, model=model)
 

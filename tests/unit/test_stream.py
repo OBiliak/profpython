@@ -110,12 +110,16 @@ class StreamPipelineTest(unittest.TestCase):
 
     def test_calculates_statistics(self) -> None:
         stats = calculate_statistics(self.cars)
-        self.assertEqual((stats["count"], stats["most_expensive"].id, stats["lowest_mileage"].id), (3, 2, 2))
+        self.assertEqual(
+            (stats["count"], stats["most_expensive"].id, stats["lowest_mileage"].id), (3, 2, 2)
+        )
         self.assertAlmostEqual(stats["average_price"], 750000.0)
 
     def test_statistics_of_empty_stream(self) -> None:
         stats = calculate_statistics([])
-        self.assertEqual((stats["count"], stats["average_price"], stats["most_expensive"]), (0, 0.0, None))
+        self.assertEqual(
+            (stats["count"], stats["average_price"], stats["most_expensive"]), (0, 0.0, None)
+        )
 
     def test_running_average(self) -> None:
         self.assertEqual(list(running_average_prices(self.cars)), [500000.0, 1000000.0, 750000.0])

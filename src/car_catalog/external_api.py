@@ -103,7 +103,11 @@ async def fetch_with_retry(
             delay = backoff_delay * 2 ** (attempt - 1)
             logger.warning(
                 "ID %s: спроба %s з %s невдала (%s), повтор через %.1f с",
-                car_id, attempt, attempts, describe_error(error), delay,
+                car_id,
+                attempt,
+                attempts,
+                describe_error(error),
+                delay,
             )
             await asyncio.sleep(delay)
     raise RuntimeError("attempts має бути не менше 1")
@@ -122,7 +126,9 @@ async def fetch_cars(
         async with semaphore:
             meter.enter()
             try:
-                return await fetch_with_retry(client, car_id, settings.retry_attempts, settings.backoff_delay)
+                return await fetch_with_retry(
+                    client, car_id, settings.retry_attempts, settings.backoff_delay
+                )
             finally:
                 meter.leave()
 

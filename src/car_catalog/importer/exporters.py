@@ -79,9 +79,7 @@ def select_exporter(path: Path) -> Exporter:
         raise DataExportError(f"Непідтримуваний формат вихідного файлу: {path.name}") from error
 
 
-def export_records(
-    records: Iterable[VehicleRecord], path: Path, *, backup: bool = False
-) -> int:
+def export_records(records: Iterable[VehicleRecord], path: Path, *, backup: bool = False) -> int:
     """Export records atomically; the old output stays intact if an error occurs."""
     exporter = select_exporter(path)
     try:
