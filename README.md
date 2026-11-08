@@ -10,7 +10,25 @@
 - Лабораторна робота №5 «Обробка помилок, файли та серіалізація» — надійний імпорт/експорт (підпакет importer/, importer/app.py).
 - Лабораторна робота №6 «Автоматизоване тестування Python-програм» — test suite на pytest (tests/), сценарій каталогу (catalog_app.py).
 - Лабораторна робота №7 «Робота з базами даних у Python» — SQLite, SQLAlchemy ORM, Repository, Alembic (підпакет persistence/, database_app.py).
-- Лабораторна робота №8 «Мережеве та асинхронне програмування. REST API» — FastAPI, Pydantic, HTTPX, asyncio (api.py, schemas.py, external_api.py, main.py).
+- Лабораторна робота №8 «Мережеве та асинхронне програмування. REST API» — FastAPI, Pydantic, HTTPX, asyncio (api.py, schemas.py, external_api.py, api_demo.py).
+- Лабораторна робота №9 «Паралельність, багатопроцесність та оптимізація» — профілювання, threads, processes, NumPy, caching (підпакет performance/, benchmarks/, main.py).
+
+## Можливості (лабораторна робота №9)
+- великий тестовий каталог: generate_cars(250 000) з фіксованим seed 42 (performance/analytics.py); baseline на циклах
+  Python: пошук за маркою, фільтр за роком, найдорожчий, мінімальний пробіг, середня ціна, статистика пробігу
+  і виробників; CPU-bound задача — залишкова вартість кожного авто через 10 років (120 кроків на авто);
+- профілювання (performance/profiling.py): cProfile + pstats (ncalls, tottime, cumtime), tracemalloc (поточна і пікова
+  пам'ять), timeit; bottleneck — residual_value() (~98 % часу звіту);
+- threads (performance/parallel.py): ThreadPoolExecutor і threading.Thread (start/join); I/O-bound читання 8 файлів
+  cars_part_N.csv.gz; race condition на спільному лічильнику і виправлення через Lock;
+- processes: ProcessPoolExecutor (map з chunksize) і multiprocessing.Process + Queue;
+- NumPy (performance/vectorized.py): стовпці каталогу як масиви, маски, argmax/argmin, bincount для виробників,
+  векторизована залишкова вартість; результати збігаються з baseline;
+- caching (performance/caching.py): lru_cache статистики марки/виробника, ключ містить version каталогу —
+  add / update_price / remove інвалідовують кеш; cache_info, cache_clear;
+- benchmark framework (performance/benchmarking.py): повтори perf_counter, mean/median, speedup, CSV;
+  benchmarks/benchmark.py — 10 000 / 100 000 / 250 000 авто, 1/2/4/8 workers, 5 повторів,
+  результати benchmarks/results/benchmark_results.csv і графіки PNG (benchmarks/plot_results.py).
 
 ## Можливості (лабораторна робота №8)
 - REST API на FastAPI (api.py) над persistence layer ЛР7, JSON, Pydantic schemas з validation (schemas.py):
@@ -134,13 +152,17 @@ Python 3.11+, PyYAML, SQLAlchemy 2, Alembic, FastAPI, Uvicorn, HTTPX, Pydantic 2
 ```bash
 python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
-python -m pip install -e ".[dev,test]"
+python -m pip install -e ".[dev,test,bench]"   # bench — matplotlib для графіків ЛР9
 ```
 
 ## Запуск
 ```bash
-python -m car_catalog.main                     # ЛР8: сервер Uvicorn + HTTP-запити до всіх endpoints + async HTTPX (з кореня)
+python -m car_catalog.main                     # ЛР9: профілювання і оптимізації на 250 000 авто (~30 с)
+python -m car_catalog.main 20000               # те саме на меншому каталозі
 car-catalog                                    # те саме, console script
+python benchmarks/benchmark.py                 # повний benchmark ЛР9 (5 повторів, ~5 хв) → benchmarks/results/*.csv
+python benchmarks/plot_results.py              # графіки execution_time.png, speedup.png, time_by_size.png
+python -m car_catalog.api_demo                 # ЛР8: сервер Uvicorn + HTTP-запити до всіх endpoints + async HTTPX (з кореня)
 alembic upgrade head && uvicorn car_catalog.api:app   # API вручну: http://127.0.0.1:8000/docs (Swagger UI)
 python -m car_catalog.database_app             # ЛР7: БД міграціями → CRUD → запити → DB-API → транзакції
 alembic upgrade head                           # застосувати міграції до car_catalog.db
@@ -170,6 +192,7 @@ python -m pytest "tests/unit/test_models.py::test_rejects_year_outside_range"   
 python -m pytest -m integration                # лише integration tests
 python -m pytest tests/integration/test_repositories.py -v   # тести persistence layer (ЛР7)
 python -m pytest tests/integration/test_api.py tests/unit/test_external_api.py -v   # API tests (ЛР8)
+python -m pytest tests/unit/test_parallel.py tests/unit/test_vectorized.py tests/unit/test_caching.py -v   # ЛР9
 python -m pytest -m "not integration"          # лише unit tests
 python -m pytest -v --cov --cov-branch --cov-report=term-missing --cov-report=html   # coverage, htmlcov/index.html
 python -m pytest experiments -v                # експерименти ЛР6 (частина тестів падає навмисно)
@@ -194,7 +217,11 @@ src/car_catalog/analytics.py   статистика, сортування, *args
 src/car_catalog/decorators.py  measure_time, log_operation, історія в deque (ЛР2)
 src/car_catalog/analysis.py    аналіз каталогу (ЛР2)
 src/car_catalog/benchmark.py   benchmark пошуку (ЛР2)
-src/car_catalog/main.py        точка входу: REST API зі справжнім сервером Uvicorn (ЛР8)
+src/car_catalog/main.py        точка входу: демонстрація продуктивності (ЛР9)
+src/car_catalog/api_demo.py    REST API зі справжнім сервером Uvicorn (ЛР8)
+src/car_catalog/performance/   analytics (дані і baseline), profiling, parallel, vectorized, caching,
+                               benchmarking (ЛР9)
+benchmarks/                    benchmark.py, plot_results.py, results/ — CSV і графіки (ЛР9)
 src/car_catalog/api.py         FastAPI application, endpoints, exception handlers, lifespan (ЛР8)
 src/car_catalog/schemas.py     Pydantic schemas і validation rules (ЛР8)
 src/car_catalog/external_api.py  httpx.AsyncClient, retry, Semaphore, Task/gather, timeout (ЛР8)
@@ -219,12 +246,13 @@ typecheck_demo/errors.py       type-checking experiment (ЛР4)
 check.sh                       CI-ready перевірка: mypy + pytest + coverage (ЛР4, ЛР6)
 data/cars.csv, data/cars_extra.csv  демонстраційні CSV (з некоректними рядками)
 tests/conftest.py              спільні fixtures і FakeVehicleRepository (ЛР6)
-tests/unit/                    unit tests: test_external_api (ЛР8, httpx.MockTransport); test_models, test_catalog_service, test_validators, test_readers,
+tests/unit/                    unit tests: test_profiling, test_parallel, test_vectorized, test_caching,
+                               test_benchmarking (ЛР9); test_external_api (ЛР8, httpx.MockTransport); test_models, test_catalog_service, test_validators, test_readers,
                                test_configuration, test_exporters, test_vehicle_info, test_repository_doubles,
                                test_files_and_time (ЛР6); unittest-тести ЛР1–5 (test_services, test_analytics,
                                test_stream, test_domain, test_importer) запускаються тим самим pytest
 tests/integration/             test_import_pipeline, test_export_pipeline, test_application_flow (ЛР6);
                                test_repositories, test_database_services, test_dbapi, test_migrations,
-                               test_database_app (ЛР7, тестова БД у tmp_path); test_api, test_main_api (ЛР8)
+                               test_database_app (ЛР7, тестова БД у tmp_path); test_api, test_api_demo (ЛР8); test_main_performance (ЛР9)
 experiments/                   експерименти ЛР6 з тестуванням
 ```
