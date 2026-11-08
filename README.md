@@ -9,7 +9,33 @@
 - Лабораторна робота №4 «Професійне ООП та система типів Python» — ООП-модель каталогу (підпакет domain/).
 - Лабораторна робота №5 «Обробка помилок, файли та серіалізація» — надійний імпорт/експорт (підпакет importer/, importer/app.py).
 - Лабораторна робота №6 «Автоматизоване тестування Python-програм» — test suite на pytest (tests/), сценарій каталогу (catalog_app.py).
-- Лабораторна робота №7 «Робота з базами даних у Python» — SQLite, SQLAlchemy ORM, Repository, Alembic (підпакет persistence/, main.py).
+- Лабораторна робота №7 «Робота з базами даних у Python» — SQLite, SQLAlchemy ORM, Repository, Alembic (підпакет persistence/, database_app.py).
+- Лабораторна робота №8 «Мережеве та асинхронне програмування. REST API» — FastAPI, Pydantic, HTTPX, asyncio (api.py, schemas.py, external_api.py, main.py).
+
+## Можливості (лабораторна робота №8)
+- REST API на FastAPI (api.py) над persistence layer ЛР7, JSON, Pydantic schemas з validation (schemas.py):
+  рік 1950–2026, ціна > 0, пробіг >= 0, VIN — 17 символів без I, O, Q;
+- endpoints: GET /cars (query: brand, model, min_year, max_year, sort_by, descending, limit, offset), GET /cars/{car_id},
+  POST /cars (201), PATCH /cars/{car_id} (ціна і пробіг), DELETE /cars/{car_id} (204), GET /cars/statistics
+  (найдорожчий, середня ціна, найменший пробіг), GET /manufacturers, GET /manufacturers/{manufacturer_id}/cars,
+  POST /cars/batch (асинхронне завантаження групи), GET /;
+- status codes 200, 201, 204, 404, 409 (дублікат VIN), 422, 504; structured error responses {"error", "detail"};
+  custom exception handlers; dependency injection (Depends: сесія БД, HTTP client); background task (лог нового авто);
+  OpenAPI metadata і Swagger UI (/docs);
+- async HTTP client (external_api.py): httpx.AsyncClient, asyncio.create_task + gather, Semaphore (rate limiting),
+  retry з exponential backoff (0.2, 0.4, 0.8 с; лише мережеві помилки, timeout і 5xx), httpx timeout і asyncio.wait_for,
+  налаштування через змінні середовища; один AsyncClient на весь застосунок (lifespan);
+- API tests: TestClient і httpx.AsyncClient + ASGITransport з окремою тестовою БД; mock зовнішнього HTTP service
+  через httpx.MockTransport; тест main() зі справжнім сервером Uvicorn.
+
+### Змінні середовища API
+| Змінна | За замовчуванням | Що задає |
+|---|---|---|
+| CAR_CATALOG_DATABASE_URL | sqlite:///car_catalog.db | база даних API |
+| CAR_CATALOG_API_URL | http://127.0.0.1:8000 | адреса API для POST /cars/batch |
+| CAR_CATALOG_HTTP_TIMEOUT | 5.0 | timeout одного HTTP-запиту, с |
+| CAR_CATALOG_RETRY_ATTEMPTS | 3 | кількість спроб |
+| CAR_CATALOG_MAX_CONCURRENCY | 3 | ліміт Semaphore |
 
 ## Можливості (лабораторна робота №7)
 - SQLite database car_catalog.db; таблиці manufacturers і cars (one-to-many): PRIMARY KEY, FOREIGN KEY
@@ -101,7 +127,7 @@
 - benchmark пошуку list vs dict і перевірки наявності list vs set на 1 000 / 10 000 / 100 000 записів.
 
 ## Вимоги
-Python 3.11+, PyYAML, SQLAlchemy 2, Alembic (встановлюються з пакетом); для розробки — mypy і types-PyYAML (`.[dev]`);
+Python 3.11+, PyYAML, SQLAlchemy 2, Alembic, FastAPI, Uvicorn, HTTPX, Pydantic 2 (встановлюються з пакетом); для розробки — mypy і types-PyYAML (`.[dev]`);
 для тестів — pytest, pytest-cov, pytest-asyncio (`.[test]`)
 
 ## Встановлення
@@ -113,8 +139,10 @@ python -m pip install -e ".[dev,test]"
 
 ## Запуск
 ```bash
-python -m car_catalog.main                     # ЛР7: БД міграціями → CRUD → запити → DB-API → транзакції (з кореня проєкту)
+python -m car_catalog.main                     # ЛР8: сервер Uvicorn + HTTP-запити до всіх endpoints + async HTTPX (з кореня)
 car-catalog                                    # те саме, console script
+alembic upgrade head && uvicorn car_catalog.api:app   # API вручну: http://127.0.0.1:8000/docs (Swagger UI)
+python -m car_catalog.database_app             # ЛР7: БД міграціями → CRUD → запити → DB-API → транзакції
 alembic upgrade head                           # застосувати міграції до car_catalog.db
 alembic current                                # поточна ревізія; alembic history — список міграцій
 alembic downgrade -1                           # скасувати останню міграцію (VIN)
@@ -141,6 +169,7 @@ python -m pytest tests/unit/test_models.py     # один файл
 python -m pytest "tests/unit/test_models.py::test_rejects_year_outside_range"   # один test
 python -m pytest -m integration                # лише integration tests
 python -m pytest tests/integration/test_repositories.py -v   # тести persistence layer (ЛР7)
+python -m pytest tests/integration/test_api.py tests/unit/test_external_api.py -v   # API tests (ЛР8)
 python -m pytest -m "not integration"          # лише unit tests
 python -m pytest -v --cov --cov-branch --cov-report=term-missing --cov-report=html   # coverage, htmlcov/index.html
 python -m pytest experiments -v                # експерименти ЛР6 (частина тестів падає навмисно)
@@ -165,7 +194,11 @@ src/car_catalog/analytics.py   статистика, сортування, *args
 src/car_catalog/decorators.py  measure_time, log_operation, історія в deque (ЛР2)
 src/car_catalog/analysis.py    аналіз каталогу (ЛР2)
 src/car_catalog/benchmark.py   benchmark пошуку (ЛР2)
-src/car_catalog/main.py        точка входу: каталог з БД SQLite (ЛР7)
+src/car_catalog/main.py        точка входу: REST API зі справжнім сервером Uvicorn (ЛР8)
+src/car_catalog/api.py         FastAPI application, endpoints, exception handlers, lifespan (ЛР8)
+src/car_catalog/schemas.py     Pydantic schemas і validation rules (ЛР8)
+src/car_catalog/external_api.py  httpx.AsyncClient, retry, Semaphore, Task/gather, timeout (ЛР8)
+src/car_catalog/database_app.py  каталог з БД SQLite (ЛР7)
 src/car_catalog/catalog_app.py сценарій каталогу, покритий тестами (ЛР6)
 src/car_catalog/catalog_flow.py  import → domain-каталог → export (ЛР6)
 src/car_catalog/stream/        readers, parsers, models, filters, transformations, batches,
@@ -186,12 +219,12 @@ typecheck_demo/errors.py       type-checking experiment (ЛР4)
 check.sh                       CI-ready перевірка: mypy + pytest + coverage (ЛР4, ЛР6)
 data/cars.csv, data/cars_extra.csv  демонстраційні CSV (з некоректними рядками)
 tests/conftest.py              спільні fixtures і FakeVehicleRepository (ЛР6)
-tests/unit/                    unit tests: test_models, test_catalog_service, test_validators, test_readers,
+tests/unit/                    unit tests: test_external_api (ЛР8, httpx.MockTransport); test_models, test_catalog_service, test_validators, test_readers,
                                test_configuration, test_exporters, test_vehicle_info, test_repository_doubles,
                                test_files_and_time (ЛР6); unittest-тести ЛР1–5 (test_services, test_analytics,
                                test_stream, test_domain, test_importer) запускаються тим самим pytest
 tests/integration/             test_import_pipeline, test_export_pipeline, test_application_flow (ЛР6);
                                test_repositories, test_database_services, test_dbapi, test_migrations,
-                               test_database_app (ЛР7, тестова БД у tmp_path)
+                               test_database_app (ЛР7, тестова БД у tmp_path); test_api, test_main_api (ЛР8)
 experiments/                   експерименти ЛР6 з тестуванням
 ```
