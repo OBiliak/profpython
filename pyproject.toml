@@ -35,6 +35,10 @@ markers = [
     "integration: tests that combine several components (files, services, application flow)",
 ]
 asyncio_default_fixture_loop_scope = "function"
+filterwarnings = [
+    # Starlette 1.x recommends httpx2 for TestClient; the course uses httpx (TestClient works the same)
+    "ignore::starlette.exceptions.StarletteDeprecationWarning",
+]
 
 [tool.coverage.run]
 branch = true

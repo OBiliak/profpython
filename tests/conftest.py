@@ -1,13 +1,16 @@
-"""Shared pytest fixtures of the car catalog test suite (laboratory works 6–7)."""
+"""Shared pytest fixtures of the car catalog test suite (laboratory works 6–8)."""
 
 import logging
 from collections.abc import Callable, Iterator
 from pathlib import Path
 
+import httpx
 import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import Engine
 from sqlalchemy.orm import Session
 
+from car_catalog.api import app, get_http_client, get_session
 from car_catalog.domain.models import Car, Vehicle
 from car_catalog.domain.services import CatalogService, MemoryLogger
 from car_catalog.domain.value_objects import Mileage, Money
@@ -231,3 +234,23 @@ def make_db_car() -> Callable[..., CarRecord]:
         )
 
     return factory
+
+
+# --- REST API of laboratory work 8: the app with the test database instead of car_catalog.db ---
+
+
+@pytest.fixture
+def api_client(seeded_session: Session, db_engine: Engine) -> Iterator[TestClient]:
+    """TestClient of the API whose sessions use the test database with the demo cars."""
+    session_factory = create_session_factory(db_engine)
+
+    def test_session() -> Iterator[Session]:
+        with session_factory() as db_session:
+            yield db_session
+
+    asgi_client = httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test")
+    app.dependency_overrides[get_session] = test_session
+    app.dependency_overrides[get_http_client] = lambda: asgi_client
+    with TestClient(app) as client:
+        yield client
+    app.dependency_overrides.clear()
