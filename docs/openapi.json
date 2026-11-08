@@ -3,7 +3,7 @@
   "info": {
     "title": "Car Catalog API",
     "description": "REST API каталогу автомобілів (варіант 5): cars, manufacturers і health check.",
-    "version": "0.9.0"
+    "version": "1.0.0"
   },
   "paths": {
     "/": {
