@@ -1,11 +1,12 @@
-"""Threads: CPU-bound residual values, I/O-bound loading of catalog files, Lock."""
+"""Threads and processes: CPU-bound residual values, I/O-bound loading of catalog files, Lock."""
 
 from __future__ import annotations
 
 import csv
 import gzip
 import io
-from concurrent.futures import ThreadPoolExecutor
+import multiprocessing
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from pathlib import Path
 from threading import Lock, Thread
 
@@ -27,6 +28,44 @@ def residual_values_threads(cars: list[CarRecord], workers: int) -> list[float]:
     """Residual values in a ThreadPoolExecutor (because of the GIL there is no speedup)."""
     with ThreadPoolExecutor(max_workers=workers) as executor:
         return list(executor.map(car_residual_value, cars, chunksize=2000))
+
+
+def residual_values_processes(
+    cars: list[CarRecord], workers: int, chunksize: int = 2000
+) -> list[float]:
+    """Residual values in a ProcessPoolExecutor: every process has its own interpreter and GIL.
+
+    chunksize sends cars to the processes in batches, not one by one (fewer pickle transfers).
+    """
+    with ProcessPoolExecutor(max_workers=workers) as executor:
+        return list(executor.map(car_residual_value, cars, chunksize=chunksize))
+
+
+def batch_residual_sum(batch: list[CarRecord]) -> float:
+    """Sum of residual values of one batch."""
+    return sum(car_residual_value(car) for car in batch)
+
+
+def _process_worker(
+    index: int, batch: list[CarRecord], results: multiprocessing.Queue[tuple[int, float]]
+) -> None:
+    """Target of multiprocessing.Process: put (batch number, sum) into the queue."""
+    results.put((index, batch_residual_sum(batch)))
+
+
+def residual_sum_with_processes(cars: list[CarRecord], workers: int) -> float:
+    """multiprocessing.Process without a pool: start(), results through Queue, join()."""
+    results: multiprocessing.Queue[tuple[int, float]] = multiprocessing.Queue()
+    processes = [
+        multiprocessing.Process(target=_process_worker, args=(index, batch, results))
+        for index, batch in enumerate(split_batches(cars, workers))
+    ]
+    for process in processes:
+        process.start()
+    sums = dict(results.get() for _ in processes)  # read before join, otherwise the queue can block
+    for process in processes:
+        process.join()
+    return sum(sums[index] for index in sorted(sums))
 
 
 # --- I/O-bound: several compressed catalog files ---
