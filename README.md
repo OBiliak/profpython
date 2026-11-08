@@ -8,7 +8,24 @@
 - Лабораторна робота №3 «Ітератори, генератори та потокова обробка даних» — потоковий конвеєр (підпакет stream/).
 - Лабораторна робота №4 «Професійне ООП та система типів Python» — ООП-модель каталогу (підпакет domain/).
 - Лабораторна робота №5 «Обробка помилок, файли та серіалізація» — надійний імпорт/експорт (підпакет importer/, importer/app.py).
-- Лабораторна робота №6 «Автоматизоване тестування Python-програм» — test suite на pytest (tests/), сценарій каталогу (main.py).
+- Лабораторна робота №6 «Автоматизоване тестування Python-програм» — test suite на pytest (tests/), сценарій каталогу (catalog_app.py).
+- Лабораторна робота №7 «Робота з базами даних у Python» — SQLite, SQLAlchemy ORM, Repository, Alembic (підпакет persistence/, main.py).
+
+## Можливості (лабораторна робота №7)
+- SQLite database car_catalog.db; таблиці manufacturers і cars (one-to-many): PRIMARY KEY, FOREIGN KEY
+  cars.manufacturer_id → manufacturers.id з ON DELETE CASCADE, UNIQUE manufacturers.name і cars.vin,
+  CHECK для year (1950–2026), price > 0, mileage >= 0; FOREIGN KEY enforcement (`PRAGMA foreign_keys = ON`);
+- SQLAlchemy ORM-моделі Manufacturer і Car з relationship(); engine і Session factory (persistence/database.py);
+- Repository Pattern: ManufacturerRepository і CarRepository — CRUD, зміна ціни та пробігу, пошук за маркою,
+  фільтр за роком, складний фільтр, сортування, пагінація, JOIN з країною виробника;
+- функції ЛР1 через SQL (CarCatalogService): пошук за маркою, фільтр за роком, найдорожчий автомобіль,
+  середня ціна (AVG), мінімальний пробіг, COUNT, SUM, статистика за виробниками (GROUP BY);
+- Python DB-API (sqlite3): параметризований пошук автомобілів за маркою/виробником (`?`), COUNT за країнами;
+- транзакція update_prices_for_manufacturer(): масове оновлення цін виробника, commit або rollback, якщо ціна <= 0,
+  автомобіль не знайдено або він іншого виробника; IntegrityError → DatabaseConstraintError;
+- міграції Alembic: 0001 — таблиці, 0002 — VIN з UNIQUE index (upgrade і downgrade);
+- integration tests з окремою тестовою БД у tmp_path: CRUD, relationship, year filter, aggregates, UNIQUE VIN,
+  CHECK, FOREIGN KEY, rollback, DB-API, міграції, main.
 
 ## Можливості (лабораторна робота №6)
 - test suite на pytest: tests/unit (unit tests) і tests/integration (marker `integration`), спільні fixtures у
@@ -84,7 +101,7 @@
 - benchmark пошуку list vs dict і перевірки наявності list vs set на 1 000 / 10 000 / 100 000 записів.
 
 ## Вимоги
-Python 3.11+, PyYAML (встановлюється з пакетом); для розробки — mypy і types-PyYAML (`.[dev]`);
+Python 3.11+, PyYAML, SQLAlchemy 2, Alembic (встановлюються з пакетом); для розробки — mypy і types-PyYAML (`.[dev]`);
 для тестів — pytest, pytest-cov, pytest-asyncio (`.[test]`)
 
 ## Встановлення
@@ -96,8 +113,13 @@ python -m pip install -e ".[dev,test]"
 
 ## Запуск
 ```bash
-python -m car_catalog.main                     # сценарій каталогу ЛР6: import → пошук → фільтр → info service → export
+python -m car_catalog.main                     # ЛР7: БД міграціями → CRUD → запити → DB-API → транзакції (з кореня проєкту)
 car-catalog                                    # те саме, console script
+alembic upgrade head                           # застосувати міграції до car_catalog.db
+alembic current                                # поточна ревізія; alembic history — список міграцій
+alembic downgrade -1                           # скасувати останню міграцію (VIN)
+sqlite3 car_catalog.db ".schema"               # переглянути схему БД
+python -m car_catalog.catalog_app              # сценарій каталогу ЛР6: import → пошук → фільтр → info service → export
 python -m car_catalog.importer.app             # імпорт/експорт за config.yaml (ЛР5), з кореня проєкту
 python -m car_catalog.importer.app other.yaml  # інший файл конфігурації
 CAR_IMPORT_SKIP_INVALID=false python -m car_catalog.importer.app   # strict mode без зміни YAML
@@ -118,6 +140,7 @@ python -m pytest -v                            # увесь suite (tests/)
 python -m pytest tests/unit/test_models.py     # один файл
 python -m pytest "tests/unit/test_models.py::test_rejects_year_outside_range"   # один test
 python -m pytest -m integration                # лише integration tests
+python -m pytest tests/integration/test_repositories.py -v   # тести persistence layer (ЛР7)
 python -m pytest -m "not integration"          # лише unit tests
 python -m pytest -v --cov --cov-branch --cov-report=term-missing --cov-report=html   # coverage, htmlcov/index.html
 python -m pytest experiments -v                # експерименти ЛР6 (частина тестів падає навмисно)
@@ -142,7 +165,8 @@ src/car_catalog/analytics.py   статистика, сортування, *args
 src/car_catalog/decorators.py  measure_time, log_operation, історія в deque (ЛР2)
 src/car_catalog/analysis.py    аналіз каталогу (ЛР2)
 src/car_catalog/benchmark.py   benchmark пошуку (ЛР2)
-src/car_catalog/main.py        точка входу: сценарій каталогу, покритий тестами (ЛР6)
+src/car_catalog/main.py        точка входу: каталог з БД SQLite (ЛР7)
+src/car_catalog/catalog_app.py сценарій каталогу, покритий тестами (ЛР6)
 src/car_catalog/catalog_flow.py  import → domain-каталог → export (ЛР6)
 src/car_catalog/stream/        readers, parsers, models, filters, transformations, batches,
                                analytics, iterators, generate, pipeline, experiment, demo (ЛР3)
@@ -151,6 +175,9 @@ src/car_catalog/domain/        models, value_objects, specifications, protocols,
                                vehicle_info — external vehicle info service (ЛР6)
 src/car_catalog/importer/      exceptions, models, config, logging_config, files, readers,
                                validators, exporters, services, experiments, app (ЛР5)
+src/car_catalog/persistence/   database, models, repositories, services, dbapi, exceptions, migrations, seed (ЛР7)
+alembic.ini, migrations/       налаштування Alembic і міграції 0001, 0002 (ЛР7)
+car_catalog.db                 робоча БД (створюється під час запуску, не комітиться)
 config.yaml                    конфігурація імпорту (ЛР5)
 data/vehicles.csv              вхідний CSV варіанта 5 з valid і invalid записами (ЛР5)
 data/vehicles_extra.yaml       YAML input (ЛР5)
@@ -163,6 +190,8 @@ tests/unit/                    unit tests: test_models, test_catalog_service, te
                                test_configuration, test_exporters, test_vehicle_info, test_repository_doubles,
                                test_files_and_time (ЛР6); unittest-тести ЛР1–5 (test_services, test_analytics,
                                test_stream, test_domain, test_importer) запускаються тим самим pytest
-tests/integration/             test_import_pipeline, test_export_pipeline, test_application_flow (ЛР6)
+tests/integration/             test_import_pipeline, test_export_pipeline, test_application_flow (ЛР6);
+                               test_repositories, test_database_services, test_dbapi, test_migrations,
+                               test_database_app (ЛР7, тестова БД у tmp_path)
 experiments/                   експерименти ЛР6 з тестуванням
 ```
