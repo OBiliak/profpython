@@ -33,7 +33,7 @@ class Manufacturer(Base):
 
 
 class Car(Base):
-    """Car of the catalog: model, year, price, mileage and the manufacturer (brand)."""
+    """Car of the catalog: model, year, price, mileage, VIN and the manufacturer (brand)."""
 
     __tablename__ = "cars"
     __table_args__ = (
@@ -47,6 +47,7 @@ class Car(Base):
     year: Mapped[int] = mapped_column(Integer, nullable=False)
     price: Mapped[float] = mapped_column(Float, nullable=False)
     mileage: Mapped[int] = mapped_column(Integer, nullable=False)
+    vin: Mapped[str | None] = mapped_column(String(17), unique=True, index=True, nullable=True)
     manufacturer_id: Mapped[int] = mapped_column(
         ForeignKey("manufacturers.id", ondelete="CASCADE"),
         nullable=False,
