@@ -1,4 +1,4 @@
-"""Entry point: the tested car catalog scenario (laboratory work 6)."""
+"""Tested car catalog scenario of laboratory work 6: python -m car_catalog.catalog_app."""
 
 import asyncio
 import sys

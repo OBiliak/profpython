@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from car_catalog.importer import app
-from car_catalog.main import main
+from car_catalog.catalog_app import main
 
 pytestmark = pytest.mark.integration
 
