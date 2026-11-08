@@ -1,15 +1,21 @@
-"""Shared pytest fixtures of the car catalog test suite (laboratory work 6)."""
+"""Shared pytest fixtures of the car catalog test suite (laboratory works 6–7)."""
 
 import logging
 from collections.abc import Callable, Iterator
 from pathlib import Path
 
 import pytest
+from sqlalchemy import Engine
+from sqlalchemy.orm import Session
 
 from car_catalog.domain.models import Car, Vehicle
 from car_catalog.domain.services import CatalogService, MemoryLogger
 from car_catalog.domain.value_objects import Mileage, Money
 from car_catalog.importer.validators import ValidationPolicy
+from car_catalog.persistence.database import create_database_engine, create_session_factory
+from car_catalog.persistence.models import Base
+from car_catalog.persistence.models import Car as CarRecord
+from car_catalog.persistence.seed import seed_catalog
 
 CSV_HEADER = "vehicle_id,brand,model,year,price,mileage"
 
@@ -173,3 +179,55 @@ def config_file(tmp_path: Path, write_csv: Callable[..., Path]) -> Path:
         encoding="utf-8",
     )
     return path
+
+
+# --- Test database of laboratory work 7: a separate SQLite file in tmp_path for every test ---
+
+
+@pytest.fixture
+def database_path(tmp_path: Path) -> Path:
+    """Path of the test database file (never the working car_catalog.db)."""
+    return tmp_path / "test_catalog.db"
+
+
+@pytest.fixture
+def db_engine(database_path: Path) -> Iterator[Engine]:
+    """Engine of the test database with all tables (setup), disposed after the test (teardown)."""
+    engine = create_database_engine(f"sqlite:///{database_path}")
+    Base.metadata.create_all(engine)
+    yield engine
+    Base.metadata.drop_all(engine)
+    engine.dispose()
+
+
+@pytest.fixture
+def session(db_engine: Engine) -> Iterator[Session]:
+    """Session of the empty test database."""
+    with create_session_factory(db_engine)() as db_session:
+        yield db_session
+
+
+@pytest.fixture
+def seeded_session(session: Session) -> Session:
+    """Session of the test database with 5 manufacturers and 10 cars of laboratory works 1–2."""
+    seed_catalog(session)
+    return session
+
+
+@pytest.fixture
+def make_db_car() -> Callable[..., CarRecord]:
+    """Factory of ORM cars with default valid fields."""
+
+    def factory(
+        manufacturer_id: int,
+        model: str = "Corolla",
+        year: int = 2018,
+        price: float = 520_000,
+        mileage: int = 85_000,
+        vin: str | None = None,
+    ) -> CarRecord:
+        return CarRecord(
+            model=model, year=year, price=price, mileage=mileage, vin=vin, manufacturer_id=manufacturer_id
+        )
+
+    return factory
