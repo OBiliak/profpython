@@ -3,7 +3,7 @@
 import csv
 import statistics
 from collections.abc import Callable
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from pathlib import Path
 from time import perf_counter
 from typing import Any
@@ -76,9 +76,8 @@ def save_csv(results: list[BenchmarkResult], path: Path) -> None:
         writer = csv.writer(file)
         writer.writerow(header)
         for item in results:
-            data = asdict(item)
             writer.writerow(
-                [data["experiment"], data["method"], data["data_size"], data["workers"] or "-"]
+                [item.experiment, item.method, item.data_size, item.workers or "-"]
                 + [f"{value:.6f}" for value in item.times]
                 + [""] * (runs - len(item.times))
                 + [f"{item.mean:.6f}", f"{item.median:.6f}",
