@@ -5,9 +5,15 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
+from car_catalog.config import get_settings
 from car_catalog.persistence.models import Base
 
 config = context.config
+
+# The command line (alembic upgrade head) gives no URL: use DATABASE_URL of the application.
+# upgrade_database() from Python sets the URL itself.
+if not config.get_main_option("sqlalchemy.url"):
+    config.set_main_option("sqlalchemy.url", get_settings().database_url)
 
 # The application turns logging setup off (attributes["configure_logger"] = False),
 # so that running migrations from Python does not replace its loggers.

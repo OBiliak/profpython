@@ -7,14 +7,14 @@ from alembic.config import Config
 from alembic.runtime.migration import MigrationContext
 from sqlalchemy import Engine
 
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
-ALEMBIC_INI = PROJECT_ROOT / "alembic.ini"
+# migrations are a part of the package, so they are also in the wheel and in the Docker image
+MIGRATIONS_DIR = Path(__file__).resolve().parents[1] / "migrations"
 
 
 def make_alembic_config(database_url: str) -> Config:
-    """Alembic configuration from alembic.ini with another database URL."""
-    config = Config(str(ALEMBIC_INI))
-    config.set_main_option("script_location", str(PROJECT_ROOT / "migrations"))
+    """Alembic configuration without alembic.ini: migrations of the package and the database URL."""
+    config = Config()
+    config.set_main_option("script_location", str(MIGRATIONS_DIR))
     config.set_main_option("sqlalchemy.url", database_url)
     config.attributes["configure_logger"] = False
     return config

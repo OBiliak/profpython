@@ -1,13 +1,24 @@
 [build-system]
-requires = ["setuptools>=70"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "car-catalog"
-version = "0.9.0"
-description = "Car catalog laboratory project with database persistence and REST API"
+dynamic = ["version"]  # one source of the version: car_catalog.__version__
+description = "Car catalog REST API: search, filters and statistics of cars (FastAPI, SQLAlchemy, SQLite)"
 readme = "README.md"
 requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Олег Біляк" }]
+keywords = ["car catalog", "fastapi", "rest api", "sqlalchemy", "sqlite"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Framework :: FastAPI",
+    "Operating System :: OS Independent",
+]
 dependencies = [
     "pyyaml>=6.0",
     "sqlalchemy>=2.0",
@@ -21,15 +32,24 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["mypy>=1.10", "types-PyYAML>=6.0", "ruff>=0.5"]
+dev = ["mypy>=1.10", "types-PyYAML>=6.0", "ruff>=0.5", "build>=1.2"]
 test = ["pytest>=8.0", "pytest-cov>=5.0", "pytest-asyncio>=0.23"]
 bench = ["matplotlib>=3.8"]
+
+[project.urls]
+Repository = "https://github.com/OBiliak/profpython"
 
 [project.scripts]
 car-catalog = "car_catalog.main:main"
 
+[tool.setuptools.dynamic]
+version = { attr = "car_catalog.__version__" }
+
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+car_catalog = ["migrations/script.py.mako", "migrations/README"]
 
 [tool.ruff]
 line-length = 100
