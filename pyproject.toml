@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "car-catalog"
-version = "0.8.0"
+version = "0.9.0"
 description = "Car catalog laboratory project with database persistence and REST API"
 readme = "README.md"
 requires-python = ">=3.11"
