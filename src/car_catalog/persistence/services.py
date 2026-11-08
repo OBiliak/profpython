@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from car_catalog.persistence.exceptions import PriceUpdateError
 from car_catalog.persistence.models import Car, Manufacturer
 from car_catalog.persistence.repositories import CarRepository, ManufacturerRepository
 
@@ -77,3 +78,32 @@ class CarCatalogService:
             for name, count, average, total in self.session.execute(statement)
         ]
 
+
+def update_prices_for_manufacturer(
+    session: Session,
+    manufacturer_name: str,
+    new_prices: dict[int, float],
+) -> int:
+    """Set new prices of several cars of one manufacturer in one transaction.
+
+    Either all prices are saved (commit) or none of them (rollback): a missing car,
+    a car of another manufacturer or a price <= 0 cancels the whole update.
+    """
+    try:
+        manufacturer = ManufacturerRepository(session).get_by_name(manufacturer_name)
+        if manufacturer is None:
+            raise PriceUpdateError(f"Виробника {manufacturer_name} не знайдено")
+        for car_id, price in new_prices.items():
+            car = session.get(Car, car_id)
+            if car is None:
+                raise PriceUpdateError(f"Автомобіль з ID {car_id} не знайдено")
+            if car.manufacturer_id != manufacturer.id:
+                raise PriceUpdateError(f"Автомобіль з ID {car_id} не належить виробнику {manufacturer.name}")
+            if price <= 0:
+                raise PriceUpdateError(f"Ціна для ID {car_id} має бути більшою за нуль: {price}")
+            car.price = price
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    return len(new_prices)
